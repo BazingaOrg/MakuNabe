@@ -8,6 +8,7 @@ import dayjs from 'dayjs'
 import toast from 'react-hot-toast'
 import { setTempData } from '@/redux/envReducer'
 import { useRef } from 'react'
+import {logMessagingError} from '@/utils/messageError'
 
 /**
  * Service是单例，类似后端的服务概念
@@ -116,12 +117,16 @@ const useTranslateService = () => {
 
   // 每0.5秒检测获取结果
   useInterval(async () => {
-    if (taskIds != null) {
-      for (const taskId of taskIds) {
-        await getTask(taskId)
+    try {
+      if (taskIds != null) {
+        for (const taskId of taskIds) {
+          await getTask(taskId)
+        }
       }
+      await tryAutoSendSummaryEmail()
+    } catch (error) {
+      logMessagingError('TRANSLATE_SERVICE_INTERVAL', error)
     }
-    await tryAutoSendSummaryEmail()
   }, 500)
 }
 

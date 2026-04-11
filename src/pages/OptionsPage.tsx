@@ -3,14 +3,11 @@ import {setEnvData} from '../redux/envReducer'
 import {useAppDispatch, useAppSelector} from '../hooks/redux'
 import {
   CUSTOM_MODEL_TOKENS,
-  DEFAULT_SERVER_URL_GEMINI,
   DEFAULT_SERVER_URL_OPENAI,
   LANGUAGES,
   MODEL_DEFAULT,
   MODEL_MAP,
-  MODEL_TIP,
   MODELS,
-  PROMPT_DEFAULTS,
   PROMPT_TYPES,
   SUMMARIZE_LANGUAGE_DEFAULT,
   WORDS_RATE,
@@ -19,9 +16,12 @@ import {IoWarning} from 'react-icons/all'
 import classNames from 'classnames'
 import toast from 'react-hot-toast'
 import {useBoolean, useEventTarget} from 'ahooks'
-import { FaChevronDown, FaChevronUp, FaGripfire } from 'react-icons/fa'
+import { FaChevronDown, FaChevronUp } from 'react-icons/fa'
 import { useMessage } from '@/hooks/useMessageService'
 import useEventChecked from '@/hooks/useEventChecked'
+import {downloadText} from '@/utils/util'
+import {ConfigTransferError, decryptEnvDataFromImport, encryptEnvDataForExport, exportConfigFilename} from '@/utils/configTransfer'
+import {sanitizeEnvData} from '@/utils/envSanitizer'
 
 const OptionCard = ({ title, children, defaultExpanded = true }: { title: React.ReactNode, children: React.ReactNode, defaultExpanded?: boolean }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
@@ -61,15 +61,15 @@ const OptionsPage = () => {
   const dispatch = useAppDispatch()
   const envData = useAppSelector(state => state.env.envData)
   const {sendExtension} = useMessage(false)
-  const {value: sidePanelValue, onChange: setSidePanelValue} = useEventChecked(envData.sidePanel)
-  const {value: autoInsertValue, onChange: setAutoInsertValue} = useEventChecked(!envData.manualInsert)
-  const {value: autoExpandValue, onChange: setAutoExpandValue} = useEventChecked(envData.autoExpand)
-  const {value: summarizeEnableValue, onChange: setSummarizeEnableValue} = useEventChecked(envData.summarizeEnable)
-  const {value: emailAutoSendEnabledValue, onChange: setEmailAutoSendEnabledValue} = useEventChecked(envData.emailAutoSendEnabled)
-  const {value: searchEnabledValue, onChange: setSearchEnabledValue} = useEventChecked(envData.searchEnabled)
-  const {value: cnSearchEnabledValue, onChange: setCnSearchEnabledValue} = useEventChecked(envData.cnSearchEnabled)
-  const {value: summarizeFloatValue, onChange: setSummarizeFloatValue} = useEventChecked(envData.summarizeFloat)
-  const {value: chapterModeValue, onChange: setChapterModeValue} = useEventChecked(envData.chapterMode ?? true)
+  const {value: sidePanelValue, setValue: setSidePanelChecked, onChange: setSidePanelValue} = useEventChecked(envData.sidePanel)
+  const {value: autoInsertValue, setValue: setAutoInsertChecked, onChange: setAutoInsertValue} = useEventChecked(!envData.manualInsert)
+  const {value: autoExpandValue, setValue: setAutoExpandChecked, onChange: setAutoExpandValue} = useEventChecked(envData.autoExpand)
+  const {value: summarizeEnableValue, setValue: setSummarizeEnableChecked, onChange: setSummarizeEnableValue} = useEventChecked(envData.summarizeEnable)
+  const {value: emailAutoSendEnabledValue, setValue: setEmailAutoSendEnabledChecked, onChange: setEmailAutoSendEnabledValue} = useEventChecked(envData.emailAutoSendEnabled)
+  const {value: searchEnabledValue, setValue: setSearchEnabledChecked, onChange: setSearchEnabledValue} = useEventChecked(envData.searchEnabled)
+  const {value: cnSearchEnabledValue, setValue: setCnSearchEnabledChecked, onChange: setCnSearchEnabledValue} = useEventChecked(envData.cnSearchEnabled)
+  const {value: summarizeFloatValue, setValue: setSummarizeFloatChecked, onChange: setSummarizeFloatValue} = useEventChecked(envData.summarizeFloat)
+  const {value: chapterModeValue, setValue: setChapterModeChecked, onChange: setChapterModeValue} = useEventChecked(envData.chapterMode ?? true)
   const [apiKeyValue, { onChange: onChangeApiKeyValue }] = useEventTarget({initialValue: envData.apiKey??''})
   const [serverUrlValue, setServerUrlValue] = useState(envData.serverUrl)
   const [modelValue, { onChange: onChangeModelValue }] = useEventTarget({initialValue: envData.model??MODEL_DEFAULT})
@@ -88,8 +88,12 @@ const OptionsPage = () => {
     return !!apiKeyValue
   }, [apiKeyValue])
 
-  const onSave = useCallback(() => {
-    dispatch(setEnvData({
+  const triggerValueChange = useCallback((onChange: (event: any) => void, value: string) => {
+    onChange({target: {value}})
+  }, [])
+
+  const getFormEnvData = useCallback((): EnvData => {
+    return {
       sidePanel: sidePanelValue,
       manualInsert: !autoInsertValue,
       autoExpand: autoExpandValue,
@@ -112,14 +116,114 @@ const OptionsPage = () => {
       searchEnabled: searchEnabledValue,
       cnSearchEnabled: cnSearchEnabledValue,
       chapterMode: chapterModeValue,
-    }))
+    }
+  }, [sidePanelValue, autoInsertValue, autoExpandValue, apiKeyValue, serverUrlValue, modelValue, customModelValue, customModelTokensValue, themeValue, summarizeEnableValue, emailAutoSendEnabledValue, emailRecipientValue, emailWebhookUrlValue, emailSubjectTemplateValue, summarizeFloatValue, summarizeLanguageValue, wordsValue, fontSizeValue, promptsValue, searchEnabledValue, cnSearchEnabledValue, chapterModeValue])
+
+  const applyFormEnvData = useCallback((nextEnvData: EnvData) => {
+    setSidePanelChecked(nextEnvData.sidePanel)
+    setAutoInsertChecked(!(nextEnvData.manualInsert ?? false))
+    setAutoExpandChecked(nextEnvData.autoExpand)
+    setSummarizeEnableChecked(nextEnvData.summarizeEnable)
+    setEmailAutoSendEnabledChecked(nextEnvData.emailAutoSendEnabled)
+    setSearchEnabledChecked(nextEnvData.searchEnabled)
+    setCnSearchEnabledChecked(nextEnvData.cnSearchEnabled)
+    setSummarizeFloatChecked(nextEnvData.summarizeFloat)
+    setChapterModeChecked(nextEnvData.chapterMode ?? true)
+
+    triggerValueChange(onChangeApiKeyValue, nextEnvData.apiKey ?? '')
+    setServerUrlValue(nextEnvData.serverUrl)
+    triggerValueChange(onChangeModelValue, nextEnvData.model ?? MODEL_DEFAULT)
+    triggerValueChange(onChangeCustomModelValue, nextEnvData.customModel ?? '')
+    setCustomModelTokensValue(nextEnvData.customModelTokens)
+    triggerValueChange(onChangeSummarizeLanguageValue, nextEnvData.summarizeLanguage ?? SUMMARIZE_LANGUAGE_DEFAULT)
+    triggerValueChange(onChangeEmailRecipientValue, nextEnvData.emailRecipient ?? '')
+    triggerValueChange(onChangeEmailWebhookUrlValue, nextEnvData.emailWebhookUrl ?? '')
+    triggerValueChange(onChangeEmailSubjectTemplateValue, nextEnvData.emailSubjectTemplate ?? '[Bilibili Summary] {{title}}')
+    setThemeValue(nextEnvData.theme)
+    setFontSizeValue(nextEnvData.fontSize)
+    setWordsValue(nextEnvData.words)
+    setPromptsValue(nextEnvData.prompts ?? {})
+  }, [setSidePanelChecked, setAutoInsertChecked, setAutoExpandChecked, setSummarizeEnableChecked, setEmailAutoSendEnabledChecked, setSearchEnabledChecked, setCnSearchEnabledChecked, setSummarizeFloatChecked, setChapterModeChecked, triggerValueChange, onChangeApiKeyValue, onChangeModelValue, onChangeCustomModelValue, onChangeSummarizeLanguageValue, onChangeEmailRecipientValue, onChangeEmailWebhookUrlValue, onChangeEmailSubjectTemplateValue])
+
+  const onExportConfig = useCallback(async () => {
+    const passphrase = window.prompt('请输入用于加密导出配置的口令：')
+    if (passphrase == null) {
+      return
+    }
+
+    const passphraseConfirm = window.prompt('请再次输入口令：')
+    if (passphraseConfirm == null) {
+      return
+    }
+
+    if (passphrase !== passphraseConfirm) {
+      toast.error('两次输入的口令不一致')
+      return
+    }
+
+    try {
+      const encryptedConfig = await encryptEnvDataForExport(getFormEnvData(), passphrase)
+      downloadText(JSON.stringify(encryptedConfig, null, 2), exportConfigFilename())
+      toast.success('配置导出成功')
+    } catch (error) {
+      if (error instanceof ConfigTransferError) {
+        toast.error(error.message)
+      } else {
+        toast.error('配置导出失败')
+      }
+    }
+  }, [getFormEnvData])
+
+  const onImportConfig = useCallback(() => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.json,application/json'
+    input.onchange = async (event: Event) => {
+      const target = event.target as HTMLInputElement
+      const file = target.files?.[0]
+      if (file == null) {
+        return
+      }
+
+      const passphrase = window.prompt('请输入用于解密导入配置的口令：')
+      if (passphrase == null) {
+        return
+      }
+
+      try {
+        const fileText = await file.text()
+        const importedEnvData = await decryptEnvDataFromImport(fileText, passphrase)
+        const mergedEnvData = sanitizeEnvData({
+          ...getFormEnvData(),
+          ...importedEnvData,
+        })
+        if (mergedEnvData == null) {
+          toast.error('导入的配置内容为空')
+          return
+        }
+
+        applyFormEnvData(mergedEnvData)
+        toast.success('配置已导入到表单，请点击“保存”后生效')
+      } catch (error) {
+        if (error instanceof ConfigTransferError) {
+          toast.error(error.message)
+        } else {
+          toast.error('配置导入失败')
+        }
+      }
+    }
+    input.click()
+  }, [applyFormEnvData, getFormEnvData])
+
+  const onSave = useCallback(() => {
+    dispatch(setEnvData(getFormEnvData()))
     toast.success('保存成功')
     sendExtension(null, 'CLOSE_SIDE_PANEL')
     // 3秒后关闭
     setTimeout(() => {
       window.close()
     }, 3000)
-  }, [dispatch, sendExtension, sidePanelValue, autoInsertValue, autoExpandValue, apiKeyValue, serverUrlValue, modelValue, customModelValue, customModelTokensValue, themeValue, summarizeEnableValue, emailAutoSendEnabledValue, emailRecipientValue, emailWebhookUrlValue, emailSubjectTemplateValue, summarizeFloatValue, summarizeLanguageValue, wordsValue, fontSizeValue, promptsValue, searchEnabledValue, cnSearchEnabledValue, chapterModeValue])
+  }, [dispatch, getFormEnvData, sendExtension])
 
   const onCancel = useCallback(() => {
     window.close()
@@ -189,40 +293,12 @@ const OptionsPage = () => {
                  placeholder={DEFAULT_SERVER_URL_OPENAI} value={serverUrlValue}
                  onChange={e => setServerUrlValue(e.target.value)}/>
         </FormItem>}
-        {<div>
-          <div className='desc text-sm text-center'>
-            <div className='flex justify-center font-semibold'>【OpenAI官方地址】</div>
-            <div>官方网址：<a className='link link-primary' href='https://platform.openai.com/' target='_blank'
-                             rel="noreferrer">点击访问</a></div>
-            <div>服务器地址：<a className='link link-primary'
-                               onClick={() => setServerUrlValue(DEFAULT_SERVER_URL_OPENAI)}
-                               rel='noreferrer'>点击设置</a></div>
-            <div className='flex justify-center font-semibold'>【Gemini官方地址】</div>
-            <div>官方网址：<a className='link link-primary' href='https://aistudio.google.com/apikey' target='_blank'
-                             rel="noreferrer">点击访问</a></div>
-            <div>服务器地址：<a className='link link-primary'
-                               onClick={() => setServerUrlValue(DEFAULT_SERVER_URL_GEMINI)}
-                               rel='noreferrer'>点击设置</a></div>
-            <div className='flex justify-center font-semibold'>【第三方国内代理】</div>
-            <div>代理网址：<a className='link link-primary' href='https://api.kksj.org/register?aff=ucVc'
-                             target='_blank'
-                             rel="noreferrer">点击访问</a></div>
-            <div>服务器地址：<a className='link link-primary'
-                               onClick={() => setServerUrlValue('https://api.kksj.org')}
-                               rel='noreferrer'>点击设置</a></div>
-            <div className='text-amber-600 flex justify-center items-center'><FaGripfire/>目前0.9人民币可充值1美元(约官方价格1/8)<FaGripfire/></div>
-            <div className='text-amber-600 flex justify-center items-center'><FaGripfire/>国内可访问，无需🪜<FaGripfire/></div>
-          </div>
-        </div>}
         {<FormItem title='模型选择' htmlFor='modelSel' tip='注意，不同模型有不同价格与token限制'>
           <select id='modelSel' className="select select-sm select-bordered" value={modelValue}
                   onChange={onChangeModelValue}>
             {MODELS.map(model => <option key={model.code} value={model.code}>{model.name}</option>)}
           </select>
         </FormItem>}
-        {<div className='desc text-sm'>
-          {MODEL_TIP}
-        </div>}
         {modelValue === 'custom' && <FormItem title='模型名' htmlFor='customModel'>
           <input id='customModel' type='text' className='input input-sm input-bordered w-full' placeholder='llama2'
                  value={customModelValue} onChange={onChangeCustomModelValue}/>
@@ -249,23 +325,23 @@ const OptionsPage = () => {
           <input id='summarizeFloat' type='checkbox' className='toggle toggle-primary' checked={summarizeFloatValue}
                  onChange={setSummarizeFloatValue}/>
         </FormItem>
-        <FormItem title='Auto email' htmlFor='emailAutoSendEnabled' tip='Send one summary email after all segments are completed for a video'>
+        <FormItem title='自动发邮件' htmlFor='emailAutoSendEnabled' tip='一个视频的所有分段总结完成后，自动发送一封汇总邮件'>
           <input id='emailAutoSendEnabled' type='checkbox' className='toggle toggle-primary' checked={emailAutoSendEnabledValue}
                  onChange={setEmailAutoSendEnabledValue}/>
         </FormItem>
-        <FormItem title='Default recipient' htmlFor='emailRecipient' tip='Use comma to separate multiple addresses'>
+        <FormItem title='默认收件人' htmlFor='emailRecipient' tip='多个收件人请用英文逗号分隔'>
           <input id='emailRecipient' type='text' className='input input-sm input-bordered w-full'
                  placeholder='you@example.com'
                  value={emailRecipientValue}
                  onChange={onChangeEmailRecipientValue}/>
         </FormItem>
-        <FormItem title='Webhook URL' htmlFor='emailWebhookUrl' tip='The extension will POST summary payload as JSON to this endpoint'>
+        <FormItem title='回调地址' htmlFor='emailWebhookUrl' tip='扩展会以 JSON POST 的方式把总结内容发送到这个接口'>
           <input id='emailWebhookUrl' type='text' className='input input-sm input-bordered w-full'
                  placeholder='https://example.com/api/send-summary-email'
                  value={emailWebhookUrlValue}
                  onChange={onChangeEmailWebhookUrlValue}/>
         </FormItem>
-        <FormItem title='Subject template' htmlFor='emailSubjectTemplate' tip='Supported placeholders: {{title}} {{author}} {{date}}'>
+        <FormItem title='邮件主题模板' htmlFor='emailSubjectTemplate' tip='支持占位符：{{title}} {{author}} {{date}}'>
           <input id='emailSubjectTemplate' type='text' className='input input-sm input-bordered w-full'
                  placeholder='[Bilibili Summary] {{title}}'
                  value={emailSubjectTemplateValue}
@@ -306,19 +382,10 @@ const OptionsPage = () => {
         <div className='flex justify-center'>
           <a className='text-sm link link-primary' onClick={togglePromptsFold}>点击{promptsFold ? '展开' : '折叠'}</a>
         </div>
-        {!promptsFold && PROMPT_TYPES.map((item) => <FormItem key={item.type} title={<div>
-          <div>{item.name}</div>
-          <div className='link text-sm' onClick={() => {
-            setPromptsValue({
-              ...promptsValue,
-              // @ts-expect-error
-              [item.type]: PROMPT_DEFAULTS[item.type] ?? ''
-            })
-          }}>点击填充默认
-          </div>
-        </div>} htmlFor={`prompt-${item.type}`}>
+        {!promptsFold && PROMPT_TYPES.map((item) => <FormItem key={item.type} title={item.name} htmlFor={`prompt-${item.type}`}>
           <textarea id={`prompt-${item.type}`} className='mt-2 textarea input-bordered w-full'
-                    placeholder='留空使用默认提示词' value={promptsValue[item.type] ?? ''} onChange={(e) => {
+                    placeholder='留空将使用内置默认提示词。支持变量：{{language}}、{{title}}、{{segment}}。'
+                    value={promptsValue[item.type] ?? ''} onChange={(e) => {
                       setPromptsValue({
                         ...promptsValue,
                         [item.type]: e.target.value
@@ -327,7 +394,12 @@ const OptionsPage = () => {
         </FormItem>)}
       </OptionCard>
 
-      <div className='flex flex-col justify-center items-center gap-5 mt-6'>
+      <div className='flex flex-col justify-center items-center gap-4 mt-6'>
+        <div className='flex flex-wrap justify-center gap-3'>
+          <button className='btn btn-sm btn-outline' onClick={onExportConfig}>导出配置</button>
+          <button className='btn btn-sm btn-outline' onClick={onImportConfig}>导入配置</button>
+        </div>
+        <div className='desc text-xs text-center'>导入配置仅回填当前表单，点击“保存”后才会生效。</div>
         <button className='btn btn-primary btn-wide' onClick={onSave}>保存</button>
         <button className='btn btn-wide' onClick={onCancel}>取消</button>
       </div>

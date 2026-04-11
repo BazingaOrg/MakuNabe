@@ -3,51 +3,14 @@ import 'tippy.js/dist/tippy.css'
 import {useAppDispatch, useAppSelector} from './hooks/redux'
 import {setEnvData, setEnvReady, setTempData, setTempReady} from './redux/envReducer'
 import {cloneDeep} from 'lodash-es'
-import {PROMPT_DEFAULTS, PROMPT_TYPE_SUMMARIZE_BRIEF, STORAGE_ENV, STORAGE_TEMP} from './consts/const'
+import {STORAGE_ENV, STORAGE_TEMP} from './consts/const'
 import OptionsPage from './pages/OptionsPage'
 import {handleJson} from './utils/util'
 import {Toaster} from 'react-hot-toast'
 import useMessageService from './hooks/useMessageService'
 import MainPage from './pages/MainPage'
 import useLocalStorage from './hooks/useLocalStorage'
-
-const sanitizeEnvData = (data?: EnvData): EnvData | undefined => {
-  if (data == null) {
-    return undefined
-  }
-
-  const nextData = {
-    ...(data as Record<string, unknown>),
-  } as EnvData & Record<string, unknown>
-
-  delete nextData.translateEnable
-  delete nextData.language
-  delete nextData.hideOnDisableAutoTranslate
-  delete nextData.transDisplay
-  delete nextData.fetchAmount
-
-  if (nextData.prompts != null) {
-    nextData.prompts = {
-      [PROMPT_TYPE_SUMMARIZE_BRIEF]: nextData.prompts[PROMPT_TYPE_SUMMARIZE_BRIEF] ?? PROMPT_DEFAULTS[PROMPT_TYPE_SUMMARIZE_BRIEF],
-    }
-  }
-
-  return nextData
-}
-
-const sanitizeTempData = (data?: TempData): TempData | undefined => {
-  if (data == null) {
-    return undefined
-  }
-
-  return {
-    downloadType: data.downloadType,
-    compact: data.compact,
-    reviewActions: data.reviewActions,
-    reviewed: data.reviewed,
-    summaryEmailSentVideoKey: data.summaryEmailSentVideoKey,
-  }
-}
+import {sanitizeEnvData, sanitizeTempData} from './utils/envSanitizer'
 
 function App() {
   const dispatch = useAppDispatch()

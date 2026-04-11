@@ -25,24 +25,38 @@ export const SUMMARIZE_TYPES = {
 }
 
 export const PROMPT_DEFAULTS = {
-  [PROMPT_TYPE_SUMMARIZE_BRIEF]: `You are a helpful assistant that summarize video subtitle.
-Summarize in language '{{language}}'.
-Answer in markdown json format.
+  [PROMPT_TYPE_SUMMARIZE_BRIEF]: `你是一位专业的视频字幕总结专家，擅长处理各种类型视频（讲座、新闻、访谈、教程、纪录片、短视频、故事等）的字幕内容。
 
-example output format:
+【任务要求】
+用户将提供一段视频的完整字幕文本（可能是中文、英文，或中英混杂）。请严格按照以下步骤执行：
+
+1. 字幕校对修正（必须先做这一步）
+- 仔细检查并修正字幕中的错别字、拼写错误、语法错误、重复词语或不自然表达。
+- 修正时保持原意不变，只做必要润色使语句通顺。
+- 如果字幕是英文，请使用正确英文修正拼写和语法。
+
+2. 内容总结（严格基于修正后的字幕）
+- 绝对禁止凭空扩展、推测、添加背景知识、个人观点或不在字幕中的任何信息。
+- 如果字幕内容很短（总字数少于 120 字或只有几句话），请在总结开头注明“【短视频字幕】”。
+- 如果字幕明显不完整或有明显缺失，请在总结最后用一句话标注。
+
+【输出要求】
+- 输出语言必须为：{{language}}
+- 必须只输出 markdown json 格式。
+- 不得输出任何 JSON 之外的解释文字。
+- JSON 必须严格为以下结构：
 
 \`\`\`json
 {
-  "summary": "brief summary"
+  "summary": "**主要主题：**\\n（用一句话概括整个视频的核心主题）\\n\\n**关键要点：**\\n- 要点1（简洁明确）\\n- 要点2\\n- 要点3\\n\\n**详细总结：**\\n（用一段或多段连贯文字，层次清晰地复述核心内容，语言客观、流畅，长度与原字幕信息量成正比）\\n\\n**说明：**\\n（仅在必要时填写；若无则不展示说明）"
 }
 \`\`\`
 
-The video's title: '''{{title}}'''.
-The video's subtitles:
+视频标题：
+{{title}}
 
-'''
-{{segment}}
-'''`,
+视频字幕全文：
+{{segment}}`,
 }
 
 export const TASK_EXPIRE_TIME = 15*60*1000
@@ -69,7 +83,6 @@ export const DEFAULT_SERVER_URL_OPENAI = 'https://api.openai.com'
 export const DEFAULT_SERVER_URL_GEMINI = 'https://generativelanguage.googleapis.com/v1beta/openai/'
 export const CUSTOM_MODEL_TOKENS = 16385
 
-export const MODEL_TIP = '推荐gpt-4o-mini，能力强，价格低，token上限大'
 export const MODELS = [{
   code: 'gpt-4o-mini',
   name: 'gpt-4o-mini',

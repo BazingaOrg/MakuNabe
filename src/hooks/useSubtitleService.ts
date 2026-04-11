@@ -19,6 +19,7 @@ import {getModelMaxTokens, getWholeText} from '../utils/bizUtil'
 import { useMessage } from './useMessageService'
 import { setCurrentTime } from '../redux/currentTimeReducer'
 import { RootState } from '../store'
+import {logMessagingError} from '@/utils/messageError'
 
 /**
  * Service是单例，类似后端的服务概念
@@ -84,6 +85,8 @@ const useSubtitleService = () => {
         dispatch(setData(data))
 
         console.debug('subtitle', data)
+      }).catch(error => {
+        logMessagingError('GET_SUBTITLE', error)
       })
     }
   }, [curFetched, curInfo, dispatch, sendInject])
@@ -91,7 +94,9 @@ const useSubtitleService = () => {
   useAsyncEffect(async () => {
     // 初始获取列表
     if (envReady) {
-      sendInject(null, 'REFRESH_VIDEO_INFO', {force: true})
+      sendInject(null, 'REFRESH_VIDEO_INFO', {force: true}).catch(error => {
+        logMessagingError('REFRESH_VIDEO_INFO', error)
+      })
     }
   }, [envReady, sendInject])
 
@@ -105,6 +110,8 @@ const useSubtitleService = () => {
       } else {
         dispatch(setTotalHeight(Math.min(Math.max(info.totalHeight, TOTAL_HEIGHT_MIN), TOTAL_HEIGHT_MAX)))
       }
+    }).catch(error => {
+      logMessagingError('GET_VIDEO_ELEMENT_INFO', error)
     })
   }, [envData.sidePanel, infos, sendInject])
 
@@ -256,6 +263,8 @@ const useSubtitleService = () => {
       if (currentTime == null || Math.abs(status.currentTime - currentTime) > 0.1) {
         dispatch(setCurrentTime(status.currentTime))
       }
+    }).catch(error => {
+      logMessagingError('GET_VIDEO_STATUS', error)
     })
   }, 500)
 

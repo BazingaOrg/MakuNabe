@@ -76,11 +76,15 @@ class Layer1Protocol<L1Req = any, L1Res = any> {
         clearTimeout(timer)
         // 移除消息 ID
         this.requests.delete(id)
+        if (res == null || typeof res !== 'object') {
+          reject(new Error('Invalid response payload: missing "res" field'))
+          return
+        }
         // 通过 ID 找到对应的 Promise 并 resolve
-        if (res!.code === 200) {
-          resolve(res!.data!)
+        if (res.code === 200) {
+          resolve(res.data!)
         } else { // 业务错误
-          reject(new Error(`${res!.code}: ${res!.msg || 'Unknown error'}`))
+          reject(new Error(`${res.code}: ${res.msg || 'Unknown error'}`))
         }
       } else {
         console.error('unknown response message id: ', id)

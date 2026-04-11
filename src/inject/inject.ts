@@ -123,6 +123,16 @@ const debug = (...args: any[]) => {
   let pages: any[] = []
   let pagesMap: Record<string, any> = {}
 
+  const buildCanonicalVideoUrl = (canonicalVideoId: string, pageNumber?: string) => {
+    const baseUrl = `${location.origin}/video/${canonicalVideoId}/`
+
+    if (!pageNumber || pageNumber === '1') {
+      return baseUrl
+    }
+
+    return `${baseUrl}?p=${pageNumber}`
+  }
+
   let lastAidOrBvid: string | null = null
   const refreshVideoInfo = async (force: boolean = false) => {
     if (force) {
@@ -173,8 +183,14 @@ const debug = (...args: any[]) => {
          */
         let chapters: any[] = []
         let subtitles
+        let canonicalVideoId = aidOrBvid
         if (aidOrBvid.toLowerCase().startsWith('av')) { // avxxx
           aid = parseInt(aidOrBvid.slice(2))
+          await fetch(`https://api.bilibili.com/x/web-interface/view?aid=${aid}`, { credentials: 'include' }).then(async res => await res.json()).then(res => {
+            canonicalVideoId = res.data?.bvid ?? aidOrBvid
+          }).catch(() => {
+            canonicalVideoId = aidOrBvid
+          })
           pages = await fetch(`https://api.bilibili.com/x/player/pagelist?aid=${aid}`, { credentials: 'include' }).then(async res => await res.json()).then(res => res.data)
           cid = pages[0].cid
           ctime = pages[0].ctime
@@ -185,6 +201,7 @@ const debug = (...args: any[]) => {
             subtitles = res.data.subtitle.subtitles
           })
         } else { // bvxxx
+          canonicalVideoId = aidOrBvid
           await fetch(`https://api.bilibili.com/x/web-interface/view?bvid=${aidOrBvid}`, { credentials: 'include' }).then(async res => await res.json()).then(async res => {
             title = res.data.title
             aid = res.data.aid
@@ -210,9 +227,11 @@ const debug = (...args: any[]) => {
 
         debug('refreshVideoInfo: ', aid, cid, pages, subtitles)
 
+        const canonicalVideoUrl = buildCanonicalVideoUrl(canonicalVideoId, pathSearchs.p)
+
         // send setVideoInfo
         runtime.injectMessaging.sendApp(!!sidePanel, 'SET_VIDEO_INFO', {
-          url: location.origin + location.pathname,
+          url: canonicalVideoUrl,
           title,
           aid,
           ctime,

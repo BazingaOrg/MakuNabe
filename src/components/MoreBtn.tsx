@@ -18,6 +18,7 @@ import toast from 'react-hot-toast'
 import {getSummarize} from '../utils/bizUtil'
 import dayjs from 'dayjs'
 import { useMessage } from '@/hooks/useMessageService'
+import {logMessagingError} from '@/utils/messageError'
 
 interface Props {
   placement: Placement
@@ -164,7 +165,9 @@ const MoreBtn = (props: Props) => {
   }, [author, ctime, data, downloadType, segments, title, url])
 
   const downloadAudioCallback = useCallback(() => {
-    sendInject(null, 'DOWNLOAD_AUDIO', {})
+    sendInject(null, 'DOWNLOAD_AUDIO', {}).catch(error => {
+      logMessagingError('DOWNLOAD_AUDIO', error)
+    })
   }, [sendInject])
 
   const selectCallback = useCallback((e: any) => {

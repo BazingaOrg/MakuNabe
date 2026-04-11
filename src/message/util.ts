@@ -5,6 +5,10 @@ import { L2ResMsg } from './typings'
  * @returns data
  */
 export const handleRes = (res: L2ResMsg): any => {
+  if (res == null || typeof res !== 'object') {
+    throw new Error('No response from message target')
+  }
+
   if (res.code === 200) {
     return res.data
   } else {
