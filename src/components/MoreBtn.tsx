@@ -207,17 +207,17 @@ const MoreBtn = (props: Props) => {
     </div>
   </div>
   {moreVisible &&
-    <Popover refElement={moreRef.current} className='bg-neutral text-neutral-content py-1 z-[1000]' options={{
+    <Popover refElement={moreRef.current} className='bg-base-100 text-base-content py-1 z-[1000] border border-base-300 rounded-md shadow-md' options={{
       placement
     }}>
       <ul className='menu menu-compact'>
-        <li className='hover:bg-accent'>
+        <li className='hover:bg-base-200'>
           <a className='flex items-center' onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
             downloadCallback(false)
           }}>
-            <RiFileCopy2Line className='w-[20px] h-[20px] text-primary/75 bg-white rounded-sm p-0.5'/>
+            <RiFileCopy2Line className='w-[20px] h-[20px] text-primary rounded-sm p-0.5 bg-primary/10'/>
             复制
             <select className='select select-ghost select-xs' value={downloadType} onChange={selectCallback}
                     onClick={preventCallback}>
@@ -225,13 +225,13 @@ const MoreBtn = (props: Props) => {
             </select>
           </a>
         </li>
-        <li className='hover:bg-accent'>
+        <li className='hover:bg-base-200'>
           <a className='flex items-center' onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
             downloadCallback(true)
           }}>
-            <ImDownload3 className='w-[20px] h-[20px] text-primary/75 bg-white rounded-sm p-0.5'/>
+            <ImDownload3 className='w-[20px] h-[20px] text-primary rounded-sm p-0.5 bg-primary/10'/>
             下载
             <select className='select select-ghost select-xs' value={downloadType} onChange={selectCallback}
                     onClick={preventCallback}>
@@ -239,13 +239,13 @@ const MoreBtn = (props: Props) => {
             </select>
           </a>
         </li>
-        <li className='hover:bg-accent'>
+        <li className='hover:bg-base-200'>
           <a className='flex items-center' onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
             downloadAudioCallback()
           }}>
-            <ImDownload3 className='w-[20px] h-[20px] text-primary/75 bg-white rounded-sm p-0.5'/>
+            <ImDownload3 className='w-[20px] h-[20px] text-primary rounded-sm p-0.5 bg-primary/10'/>
             下载音频(m4s)
           </a>
         </li>
@@ -290,14 +290,14 @@ const MoreBtn = (props: Props) => {
         {/*    Youtube Caption */}
         {/*  </a> */}
         {/* </li> */}
-        <li className='hover:bg-accent'>
+        <li className='hover:bg-base-200'>
           <a className='flex items-center' onClick={(e) => {
             chrome.runtime.openOptionsPage()
             setMoreVisible(false)
             e.preventDefault()
             e.stopPropagation()
           }}>
-            <IoMdSettings className='w-[20px] h-[20px] text-primary/75 bg-white rounded-sm p-0.5'/>
+            <IoMdSettings className='w-[20px] h-[20px] text-primary rounded-sm p-0.5 bg-primary/10'/>
             选项
           </a>
         </li>

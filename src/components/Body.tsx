@@ -33,8 +33,7 @@ import RateExtension from '../components/RateExtension'
 import ApiKeyReminder from './ApiKeyReminder'
 import { useMessaging } from '../message'
 
-const Body = (props: { isDarkTheme: boolean, darkBodyBackground: string }) => {
-  const {isDarkTheme, darkBodyBackground} = props
+const Body = () => {
   const dispatch = useAppDispatch()
   const inputting = useAppSelector(state => state.env.inputting)
   const noVideo = useAppSelector(state => state.env.noVideo)
@@ -151,9 +150,7 @@ const Body = (props: { isDarkTheme: boolean, darkBodyBackground: string }) => {
     }
   }, [autoScroll, checkAutoScroll, curOffsetTop, dispatch, floatKeyPointsSegIdx, needScroll, totalHeight])
 
-  return <div className='relative' style={{
-    backgroundColor: isDarkTheme ? darkBodyBackground : '#ffffff',
-  }}>
+  return <div className='relative bg-base-100'>
     {/* title */}
     <div className='absolute top-1 left-6 flex-center gap-1'>
       <AiOutlineAim className='cursor-pointer' onClick={posCallback} title='滚动到视频位置' />
@@ -181,7 +178,7 @@ const Body = (props: { isDarkTheme: boolean, darkBodyBackground: string }) => {
 
     {/* search */}
     {showSearchInput && <div className='px-2 py-1 flex flex-col relative'>
-      <input type='text' className='input input-xs bg-base-200' placeholder={searchPlaceholder} value={searchText} onChange={onSearchTextChange} onKeyDown={e => {
+      <input type='text' className='input input-xs bg-base-200 border border-base-300 focus:border-primary' placeholder={searchPlaceholder} value={searchText} onChange={onSearchTextChange} onKeyDown={e => {
         // enter
         if (e.key === 'Enter') {
           if (!inputting) {
@@ -193,16 +190,16 @@ const Body = (props: { isDarkTheme: boolean, darkBodyBackground: string }) => {
       {searchText && <button className='absolute top-1 right-2 btn btn-ghost btn-xs btn-circle text-base-content/75' onClick={onClearSearchText}><AiOutlineCloseCircle /></button>}
     </div>}
 
-    {disconnected && <div className='flex flex-col justify-center items-center gap-2 text-sm bg-red-400 rounded mx-2'>
-      <span className='flex items-center gap-1 text-white'><AiOutlineCloseCircle className='text-white' />已断开连接</span>
+    {disconnected && <div className='flex flex-col justify-center items-center gap-2 text-sm bg-error/15 border border-error/40 rounded-md mx-2 py-2'>
+      <span className='flex items-center gap-1 text-error'><AiOutlineCloseCircle className='text-error' />已断开连接</span>
     </div>}
 
     {/* auto scroll btn */}
     {!autoScroll && <div
-      className='absolute z-[999] top-[96px] right-6 tooltip tooltip-left cursor-pointer rounded-full bg-primary/25 hover:bg-primary/75 text-primary-content p-1.5 text-xl'
+      className='absolute z-[999] top-[96px] right-6 tooltip tooltip-left cursor-pointer rounded-full bg-primary/15 hover:bg-primary/25 text-primary p-1.5 text-xl border border-primary/30 transition-colors'
       data-tip='开启自动滚动'
       onClick={onEnableAutoScroll}>
-      <FaRegArrowAltCircleDown className={autoScroll ? 'text-accent' : ''} />
+      <FaRegArrowAltCircleDown className={autoScroll ? 'text-secondary' : ''} />
     </div>}
 
     {/* body */}

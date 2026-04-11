@@ -10,13 +10,13 @@ const ApiKeyReminder: React.FC = () => {
   }
 
   return (
-    <div className="flex items-center justify-between p-2 bg-yellow-100 text-yellow-800 text-sm rounded-md">
-      <span>请先设置API密钥以使用总结及翻译功能</span>
+    <div className="flex items-center justify-between p-2 border border-warning/40 bg-warning/15 text-base-content text-sm rounded-md">
+      <span>请先设置 API 密钥以使用总结及翻译功能</span>
       <button
-        className="px-2 py-1 bg-yellow-200 hover:bg-yellow-300 rounded text-xs font-medium transition-colors"
+        className="btn btn-xs btn-outline border-warning/50 hover:bg-warning/20 text-base-content"
         onClick={openOptionsPage}
       >
-        设置 →
+        设置 {'->'}
       </button>
     </div>
   )

@@ -26,9 +26,9 @@ const OptionCard = ({ title, children, defaultExpanded = true }: { title: React.
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
 
   return (
-    <div className="card bg-base-200 shadow-xl mb-4">
+    <div className="card bg-base-100 border border-base-300 shadow-sm mb-4">
       <div className="card-body p-4">
-        <h2 className="card-title flex justify-between cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
+        <h2 className="card-title flex justify-between cursor-pointer text-base-content" onClick={() => setIsExpanded(!isExpanded)}>
           {title}
           {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
         </h2>
@@ -47,7 +47,7 @@ const FormItem = (props: {
   return (
     <div className='flex items-center gap-4 mb-2'>
       <div className={classNames('w-1/3 text-right', tip && 'tooltip tooltip-right z-50')} data-tip={tip}>
-        <label className={classNames('font-medium', tip && 'border-b border-dotted border-current pb-[2px]')} htmlFor={htmlFor}>{title}</label>
+        <label className={classNames('font-medium text-base-content/90', tip && 'border-b border-dotted border-current pb-[2px]')} htmlFor={htmlFor}>{title}</label>
       </div>
       <div className='w-2/3'>
         {children}
@@ -337,7 +337,7 @@ const OptionsPage = () => {
   }, [])
 
   return (
-    <div className='container mx-auto max-w-3xl p-4'>
+    <div className='container mx-auto max-w-3xl p-4 bg-base-200 min-h-screen'>
       <OptionCard title="通用配置">
         <FormItem title='侧边栏' htmlFor='sidePanel' tip='字幕列表是否显示在侧边栏'>
           <input id='sidePanel' type='checkbox' className='toggle toggle-primary' checked={sidePanelValue}
@@ -356,14 +356,14 @@ const OptionsPage = () => {
                  onChange={setChapterModeValue}/>
         </FormItem>
         <FormItem title='主题'>
-          <div className="btn-group">
+          <div className="btn-group border border-base-300 rounded-md overflow-hidden">
             <button onClick={onSelTheme1} className={classNames('btn btn-sm no-animation', (!themeValue || themeValue === 'system')?'btn-active':'')}>系统</button>
             <button onClick={onSelTheme2} className={classNames('btn btn-sm no-animation', themeValue === 'light'?'btn-active':'')}>浅色</button>
             <button onClick={onSelTheme3} className={classNames('btn btn-sm no-animation', themeValue === 'dark'?'btn-active':'')}>深色</button>
           </div>
         </FormItem>
         <FormItem title='字体大小'>
-          <div className="btn-group">
+          <div className="btn-group border border-base-300 rounded-md overflow-hidden">
             <button onClick={onSelFontSize1} className={classNames('btn btn-sm no-animation', (!fontSizeValue || fontSizeValue === 'normal')?'btn-active':'')}>普通</button>
             <button onClick={onSelFontSize2} className={classNames('btn btn-sm no-animation', fontSizeValue === 'large'?'btn-active':'')}>加大</button>
           </div>
@@ -490,7 +490,7 @@ const OptionsPage = () => {
         </FormItem>)}
       </OptionCard>
 
-      <div className='flex flex-col justify-center items-center gap-4 mt-6'>
+      <div className='flex flex-col justify-center items-center gap-4 mt-6 mb-4'>
         <div className='flex flex-wrap justify-center gap-3'>
           <button className='btn btn-sm btn-outline' onClick={onExportConfig}>导出配置</button>
           <button className='btn btn-sm btn-outline' onClick={onImportConfig}>导入配置</button>

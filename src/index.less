@@ -6,12 +6,26 @@
   font-size: 16px;
 }
 
+[data-theme='light'] {
+  --bili-page-bg: #f6f7f8;
+  --bili-surface: #ffffff;
+  --bili-surface-soft: #f6f7f8;
+  --bili-border: #e3e5e7;
+}
+
+[data-theme='dark'] {
+  --bili-page-bg: #0f1115;
+  --bili-surface: #171a21;
+  --bili-surface-soft: #11141b;
+  --bili-border: #2a2f3a;
+}
+
 html,
 body {
   margin: 0;
   padding: 0;
   font-size: 100%;
-  background: transparent;
+  background: var(--bili-page-bg, transparent);
 }
 
 #bilibili-subtitle {
@@ -30,6 +44,20 @@ body {
 
 .flex-center {
   @apply flex items-center;
+}
+
+.bili-surface {
+  background: var(--bili-surface);
+  border: 1px solid var(--bili-border);
+}
+
+.bili-surface-soft {
+  background: var(--bili-surface-soft);
+  border: 1px solid var(--bili-border);
+}
+
+.bili-chip {
+  @apply bg-base-200 border border-base-300 text-base-content/80 rounded-md;
 }
 
 /**

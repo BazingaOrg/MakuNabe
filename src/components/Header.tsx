@@ -10,9 +10,8 @@ import {parseTranscript} from '../utils/bizUtil'
 const Header = (props: {
   foldCallback: () => void
   isDarkTheme: boolean
-  darkHeaderBackground: string
 }) => {
-  const {foldCallback, isDarkTheme, darkHeaderBackground} = props
+  const {foldCallback, isDarkTheme} = props
   const dispatch = useAppDispatch()
   const infos = useAppSelector(state => state.env.infos)
   const curInfo = useAppSelector(state => state.env.curInfo)
@@ -80,9 +79,9 @@ const Header = (props: {
   }, [upload])
 
   return <div className={classNames(
-    'h-[44px] flex justify-between items-center cursor-pointer'
+    'h-[44px] flex justify-between items-center cursor-pointer bg-base-200 border-b border-base-300'
   )} style={{
-    backgroundColor: isDarkTheme ? darkHeaderBackground : '#f1f2f3',
+    boxShadow: isDarkTheme ? 'inset 0 -1px 0 rgba(255,255,255,0.05)' : 'inset 0 -1px 0 rgba(0,0,0,0.03)',
   }} onClick={() => {
     if (!envData.sidePanel) {
       foldCallback()
@@ -99,7 +98,7 @@ const Header = (props: {
           <button className='btn btn-xs btn-link' onClick={onUpload}>上传(vtt/srt)</button>
           (未找到字幕)
       </div>
-        :<select disabled={!infos || infos.length <= 0} className='select select-ghost select-xs line-clamp-1' value={curInfo?.subtitle_url} onChange={selectCallback} onClick={preventCallback}>
+        :<select disabled={!infos || infos.length <= 0} className='select select-ghost select-xs line-clamp-1 border border-base-300 bg-base-100' value={curInfo?.subtitle_url} onChange={selectCallback} onClick={preventCallback}>
           {infos?.map((item: any) => <option key={item.id} value={item.subtitle_url}>{item.lan_doc}</option>)}
           <option key='upload' value='upload'>上传(vtt/srt)</option>
         </select>}

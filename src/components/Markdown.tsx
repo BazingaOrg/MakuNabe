@@ -7,7 +7,7 @@ function CopyBtn(props: {
 }) {
   const {content} = props
   return <div className='flex justify-center mt-1'>
-    <button className="btn btn-xs px-10 btn-primary normal-case" onClick={() => {
+    <button className="btn btn-xs px-8 btn-primary normal-case shadow-sm" onClick={() => {
       navigator.clipboard.writeText(content).then(() => {
         toast.success('Copied!')
       }).catch(console.error)

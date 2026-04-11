@@ -112,9 +112,9 @@ const SegmentCard = (props: {
   }, [dispatch, fold, inViewport, segment.startIdx, showCurrent, summarizeFloat, summary])
 
   return <div
-    className={classNames('border border-base-300 bg-base-200/25 rounded flex flex-col m-1.5 p-1.5 gap-1', showCurrent && 'shadow shadow-md')}>
+    className={classNames('border border-base-300 bg-base-100 rounded-md flex flex-col m-1.5 p-1.5 gap-1', showCurrent && 'ring-1 ring-primary/35 shadow-sm')}>
     {/* 章节标题 */}
-    {segment.chapterTitle && <div className='text-center py-1 px-2 bg-primary/10 rounded text-sm font-semibold text-primary border-b border-primary/20'>
+    {segment.chapterTitle && <div className='text-center py-1 px-2 bg-primary/10 rounded text-sm font-semibold text-primary border border-primary/20'>
       {segment.chapterTitle}
     </div>}
     <div className='relative flex justify-center min-h-[20px]'>
@@ -157,10 +157,10 @@ const SegmentCard = (props: {
                                                 onClick={onFold}>{segment.items.length}行已折叠,点击展开</a>
       </div>}
     {floatKeyPointsSegIdx === segment.startIdx && <div
-      className='absolute bottom-0 left-0 right-0 z-[200] border-t bg-base-100 text-primary-content shadow max-h-[100px] overflow-y-auto scrollbar-hide'
+      className='absolute bottom-0 left-0 right-0 z-[200] border-t border-base-300 bg-base-100 shadow-sm max-h-[100px] overflow-y-auto scrollbar-hide'
       onWheel={stopPopFunc}
     >
-      <div className='bg-primary/50 p-2'>
+      <div className='bg-primary/10 p-2'>
         <Summarize segment={segment} summary={summary} float/>
       </div>
     </div>}

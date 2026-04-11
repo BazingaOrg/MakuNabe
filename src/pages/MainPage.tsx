@@ -20,8 +20,6 @@ function App() {
   const totalHeight = useAppSelector(state => state.env.totalHeight)
   const {sendInject} = useMessage(!!envData.sidePanel)
   const isDarkTheme = envData.theme === 'dark' || ((envData.theme == null || envData.theme === 'system') && isDarkMode())
-  const darkHeaderBackground = 'hsl(230 18% 14%)'
-  const darkBodyBackground = 'hsl(230 12% 10%)'
 
   const foldCallback = useCallback(() => {
     dispatch(setFold(!fold))
@@ -42,14 +40,12 @@ function App() {
   useSearchService()
 
   return <div className={classNames(
-    'select-none w-full subtitle-shell',
-    isDarkTheme ? 'bg-[hsl(230_12%_10%)]' : 'bg-white'
+    'select-none w-full subtitle-shell bili-surface shadow-sm'
   )} style={{
     height: fold?undefined:`${totalHeight}px`,
-    border: isDarkTheme ? `1px solid ${darkBodyBackground}` : '1px solid #f1f2f3',
   }}>
-    <Header foldCallback={foldCallback} isDarkTheme={isDarkTheme} darkHeaderBackground={darkHeaderBackground}/>
-    {!fold && <Body isDarkTheme={isDarkTheme} darkBodyBackground={darkBodyBackground}/>}
+    <Header foldCallback={foldCallback} isDarkTheme={isDarkTheme}/>
+    {!fold && <Body/>}
   </div>
 }
 
