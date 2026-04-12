@@ -12,6 +12,7 @@ import MainPage from './pages/MainPage'
 import useLocalStorage from './hooks/useLocalStorage'
 import {sanitizeEnvData, sanitizeTempData} from './utils/envSanitizer'
 import {setTheme} from './utils/bizUtil'
+import useSystemDarkMode from './hooks/useSystemDarkMode'
 
 function App() {
   const dispatch = useAppDispatch()
@@ -20,6 +21,7 @@ function App() {
   const path = useAppSelector(state => state.env.path)
   const envReady = useAppSelector(state => state.env.envReady)
   const tempReady = useAppSelector(state => state.env.tempReady)
+  const isSystemDarkMode = useSystemDarkMode()
 
   // env数据
   const savedEnvData = useMemo(() => {
@@ -51,8 +53,12 @@ function App() {
   useMessageService()
 
   useEffect(() => {
+    if (envData.theme == null || envData.theme === 'system') {
+      setTheme(isSystemDarkMode ? 'dark' : 'light')
+      return
+    }
     setTheme(envData.theme)
-  }, [envData.theme])
+  }, [envData.theme, isSystemDarkMode])
 
   return <div>
     <Toaster position={path === 'app'?'bottom-center':'top-center'}/>

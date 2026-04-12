@@ -8,8 +8,8 @@ import {EventBusContext} from '../Router'
 import useTranslateService from '../hooks/useTranslateService'
 import {setFold} from '../redux/envReducer'
 import { useMessage } from '@/hooks/useMessageService'
-import {isDarkMode} from '@/utils/env_util'
 import classNames from 'classnames'
+import useSystemDarkMode from '@/hooks/useSystemDarkMode'
 
 function App() {
   const dispatch = useAppDispatch()
@@ -18,7 +18,8 @@ function App() {
   const eventBus = useContext(EventBusContext)
   const totalHeight = useAppSelector(state => state.env.totalHeight)
   const {sendInject} = useMessage(Boolean(envData.sidePanel))
-  const isDarkTheme = envData.theme === 'dark' || ((envData.theme == null || envData.theme === 'system') && isDarkMode())
+  const isSystemDarkMode = useSystemDarkMode()
+  const isDarkTheme = envData.theme === 'dark' || ((envData.theme == null || envData.theme === 'system') && isSystemDarkMode)
 
   const foldCallback = useCallback(() => {
     dispatch(setFold(!fold))
