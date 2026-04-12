@@ -1,6 +1,6 @@
 import {sanitizeEnvData} from './envSanitizer'
 
-const APP_ID = 'bilibili-subtitle'
+const APP_ID = 'makunabe'
 const CONFIG_VERSION = 1
 const PBKDF2_ITERATIONS = 310000
 const PBKDF2_HASH = 'SHA-256'
@@ -124,7 +124,7 @@ const assertExportConfigV1 = (data: unknown): ExportConfigV1 => {
   return config as ExportConfigV1
 }
 
-export const exportConfigFilename = () => 'bilibili-subtitle-config.v1.json'
+export const exportConfigFilename = () => 'makunabe-config.v1.json'
 
 export const encryptEnvDataForExport = async (envData: EnvData, passphrase: string): Promise<ExportConfigV1> => {
   ensurePassphrase(passphrase)

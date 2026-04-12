@@ -81,7 +81,7 @@ const OptionsPage = () => {
   const [summarizeLanguageValue, { onChange: onChangeSummarizeLanguageValue }] = useEventTarget({initialValue: envData.summarizeLanguage??SUMMARIZE_LANGUAGE_DEFAULT})
   const [emailRecipientValue, { onChange: onChangeEmailRecipientValue }] = useEventTarget({initialValue: envData.emailRecipient ?? ''})
   const [emailWebhookUrlValue, { onChange: onChangeEmailWebhookUrlValue }] = useEventTarget({initialValue: envData.emailWebhookUrl ?? ''})
-  const [emailSubjectTemplateValue, { onChange: onChangeEmailSubjectTemplateValue }] = useEventTarget({initialValue: envData.emailSubjectTemplate ?? '[Bilibili Summary] {{title}}'})
+  const [emailSubjectTemplateValue, { onChange: onChangeEmailSubjectTemplateValue }] = useEventTarget({initialValue: envData.emailSubjectTemplate ?? '[MakuNabe Summary] {{title}}'})
   const [themeValue, setThemeValue] = useState(envData.theme)
   const [fontSizeValue, setFontSizeValue] = useState(envData.fontSize)
   const [wordsValue, setWordsValue] = useState<number | undefined>(envData.words)
@@ -161,7 +161,7 @@ const OptionsPage = () => {
     triggerValueChange(onChangeSummarizeLanguageValue, nextEnvData.summarizeLanguage ?? SUMMARIZE_LANGUAGE_DEFAULT)
     triggerValueChange(onChangeEmailRecipientValue, nextEnvData.emailRecipient ?? '')
     triggerValueChange(onChangeEmailWebhookUrlValue, nextEnvData.emailWebhookUrl ?? '')
-    triggerValueChange(onChangeEmailSubjectTemplateValue, nextEnvData.emailSubjectTemplate ?? '[Bilibili Summary] {{title}}')
+    triggerValueChange(onChangeEmailSubjectTemplateValue, nextEnvData.emailSubjectTemplate ?? '[MakuNabe Summary] {{title}}')
     setThemeValue(nextEnvData.theme)
     setFontSizeValue(nextEnvData.fontSize)
     setWordsValue(nextEnvData.words)
@@ -435,7 +435,7 @@ const OptionsPage = () => {
         </FormItem>
         <FormItem title='邮件主题模板' htmlFor='emailSubjectTemplate' tip='支持占位符：{{title}} {{author}} {{date}}'>
           <input id='emailSubjectTemplate' type='text' className='input input-sm input-bordered w-full'
-                 placeholder='[Bilibili Summary] {{title}}'
+                 placeholder='[MakuNabe Summary] {{title}}'
                  value={emailSubjectTemplateValue}
                  onChange={onChangeEmailSubjectTemplateValue}/>
         </FormItem>

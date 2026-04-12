@@ -1,69 +1,159 @@
 # MakuNabe (Bazinga Fork)
 
-MakuNabe is a cozy subtitle helper for Bilibili.
+MakuNabe is a subtitle helper extension for Bilibili.
 
-It is a personal fork focused on practical daily use: reading subtitles faster, generating summaries, and exporting useful notes.
+This fork focuses on practical daily use: subtitle browsing, AI summary, and easy configuration transfer.
 
 ## Features
 
 - Show subtitle list and jump to exact timestamps
-- Generate segment summaries with AI
-- Copy or export subtitles in multiple formats
-- Configure OpenAI-compatible models (including custom endpoints)
-- Auto-send summary email via webhook after all segments are done (optional)
 
-## Quick Start
+- Generate segment summaries with OpenAI-compatible APIs
 
-### Requirements
+- Discover available models from your configured endpoint
 
-- Node.js `18.15.0`
-- `pnpm`
+- Copy or export subtitle/summary content
 
-### Install
+- Import and export encrypted extension configuration
 
-```bash
-pnpm install
-```
+- Auto-send summary email through a webhook (optional)
 
-### Development
+## For Users (GitHub Release)
 
-```bash
-pnpm run dev
-```
+### Install from Release
 
-Then open your browser extension page, enable Developer Mode, and load the unpacked extension from `dist`.
+1. Download the latest release asset (recommended: `dist.zip`).
 
-### Build
+2. Extract it to a local folder.
 
-```bash
-pnpm run build
-```
+3. Open `chrome://extensions` (or `edge://extensions`), enable Developer Mode, then click `Load unpacked`.
 
-After build, load the unpacked extension from `dist`.
+4. Select the extracted `dist` folder.
 
-## AI Setup
+### 3-Minute Minimum Setup
 
-Open the extension options page and configure:
+Open the extension options page and configure the required fields:
+
+- `apiKey`: your API key for the selected service
+
+- `serverUrl`: API base URL (for OpenAI, use `https://api.openai.com`)
+
+- `model`: click `Refresh Models`, then select one discovered model
+
+Click `Save`, open a Bilibili video with subtitles, and trigger summary to verify everything works.
+
+### Required vs Optional Configuration
+
+Required for AI summary:
 
 - `apiKey`
-- `serverUrl`
-- `model` (or custom model)
 
-For local Ollama, set:
+- `serverUrl`
+
+- `model` (or `customModel`)
+
+Optional for better experience:
+
+- `theme`, `fontSize`, side panel behavior
+
+- summary language, segment words, custom prompts
+
+- `emailAutoSendEnabled`, `emailRecipient`, `emailWebhookUrl`, `emailSubjectTemplate`
+
+- encrypted config import/export
+
+### Common Endpoint Examples
+
+OpenAI:
+
+- `serverUrl`: `https://api.openai.com`
+
+Local Ollama:
 
 ```bash
 OLLAMA_ORIGINS=chrome-extension://*,moz-extension://*,safari-web-extension://*
 ```
 
-Then use:
-
 - `serverUrl`: `http://localhost:11434`
-- `model`: select from discovered models or enter your custom model name
 
-## Notes
+- `model`: refresh and pick one discovered model (or type a custom model name)
 
-- If the subtitle panel does not load during development and you see CSP errors, check `dist/manifest.json` and ensure `web_accessible_resources[*].use_dynamic_url` is `false`, then reload the extension.
-- `push.sh` is a personal helper script and can be ignored.
+## Troubleshooting
+
+### Model discovery failed
+
+- Check `serverUrl` and `apiKey`.
+
+- Confirm the endpoint supports `GET /models`.
+
+- Try opening the endpoint from your browser to verify connectivity.
+
+### Summary failed
+
+- Confirm the selected model supports chat completion.
+
+- Reduce segment words if token-related errors appear.
+
+- Re-run with a smaller video segment for quick validation.
+
+### Webhook email failed
+
+- Verify `emailWebhookUrl` is reachable and accepts JSON `POST`.
+
+- Check your webhook response includes success semantics expected by this extension.
+
+### Video has no subtitle panel
+
+- The video may not provide subtitles.
+
+- Refresh the page and re-open the extension.
+
+- Confirm the page URL matches `https://*.bilibili.com/*`.
+
+### Network or permission related errors
+
+- This release uses broad host permission to support OpenAI-compatible endpoints and webhook URLs out of the box.
+
+- If you modified `manifest.json`, ensure your target domain is still permitted.
+
+## For Developers
+
+### Requirements
+
+- Node.js `18.15.0`
+
+- `pnpm`
+
+### Build and Load
+
+```bash
+pnpm install
+pnpm run build
+```
+
+Load the unpacked extension from `dist`.
+
+### Local Development
+
+```bash
+pnpm run dev
+```
+
+If subtitle panel injection fails with CSP-like behavior during development, check `dist/manifest.json` and keep `web_accessible_resources[*].use_dynamic_url` as `false`.
+
+## Release Notes and Artifacts
+
+Each release should include:
+
+- `dist.zip` (ready for users to load unpacked)
+
+- release notes summary
+
+- known issues section
+
+- compatibility or migration note (if configuration behavior changes)
+
+Write release notes directly in the GitHub Release description.
 
 ## Credits
 

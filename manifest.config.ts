@@ -22,8 +22,7 @@ export default defineManifest(async (env) => ({
     "storage",
   ],
   "host_permissions": [
-    "http://localhost/*",
-    "http://127.0.0.1/*"
+    "<all_urls>"
   ],
   "background": {
     "service_worker": "src/chrome/background.ts",

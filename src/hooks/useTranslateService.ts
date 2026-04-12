@@ -89,7 +89,7 @@ const useTranslateService = () => {
     const configuredSubjectTemplate = envData.emailSubjectTemplate?.trim()
     const subjectTemplate = configuredSubjectTemplate != null && configuredSubjectTemplate.length > 0
       ? configuredSubjectTemplate
-      : '[Bilibili Summary] {{title}}'
+      : '[MakuNabe Summary] {{title}}'
     const subject = subjectTemplate
       .replaceAll('{{title}}', title ?? 'Untitled')
       .replaceAll('{{author}}', author ?? '')

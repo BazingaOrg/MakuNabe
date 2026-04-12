@@ -147,7 +147,7 @@ export const buildSummaryOverview = (segments: Segment[] | undefined): {
     }
   }
   let content = `${SUMMARIZE_TYPES.brief.downloadName}\n\n${summaryBody}`
-  content += '\n--- Bilibili Subtitle (Bazinga Fork)'
+  content += '\n--- MakuNabe (Bazinga Fork)'
 
   return {
     success,
