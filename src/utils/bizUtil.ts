@@ -48,6 +48,119 @@ export const getSummaryStr = (summary: Summary) => {
   return s
 }
 
+const decodePartialJsonString = (rawValue: string) => {
+  let decoded = ''
+
+  for (let index = 0; index < rawValue.length; index++) {
+    const currentChar = rawValue[index]
+    if (currentChar !== '\\') {
+      decoded += currentChar
+      continue
+    }
+
+    const nextChar = rawValue[index + 1]
+    if (nextChar == null) {
+      break
+    }
+
+    switch (nextChar) {
+      case 'n':
+        decoded += '\n'
+        break
+      case 'r':
+        decoded += '\r'
+        break
+      case 't':
+        decoded += '\t'
+        break
+      case '"':
+        decoded += '"'
+        break
+      case '\\':
+        decoded += '\\'
+        break
+      case '/':
+        decoded += '/'
+        break
+      case 'b':
+        decoded += '\b'
+        break
+      case 'f':
+        decoded += '\f'
+        break
+      case 'u': {
+        const unicodeValue = rawValue.slice(index + 2, index + 6)
+        if (/^[0-9a-fA-F]{4}$/.test(unicodeValue)) {
+          decoded += String.fromCharCode(parseInt(unicodeValue, 16))
+          index += 4
+        }
+        break
+      }
+      default:
+        decoded += nextChar
+        break
+    }
+
+    index += 1
+  }
+
+  return decoded
+}
+
+export const extractStreamingSummaryPreview = (streamingContent?: string) => {
+  if (typeof streamingContent !== 'string' || streamingContent.trim().length === 0) {
+    return ''
+  }
+
+  const summaryKeyIndex = streamingContent.indexOf('"summary"')
+  if (summaryKeyIndex < 0) {
+    return streamingContent.trim()
+  }
+
+  const colonIndex = streamingContent.indexOf(':', summaryKeyIndex)
+  if (colonIndex < 0) {
+    return ''
+  }
+
+  let openingQuoteIndex = -1
+  for (let index = colonIndex + 1; index < streamingContent.length; index++) {
+    const currentChar = streamingContent[index]
+    if (currentChar === '"') {
+      openingQuoteIndex = index
+      break
+    }
+    if (!/\s/.test(currentChar)) {
+      return streamingContent.trim()
+    }
+  }
+
+  if (openingQuoteIndex < 0) {
+    return ''
+  }
+
+  let rawValue = ''
+  let escaped = false
+
+  for (let index = openingQuoteIndex + 1; index < streamingContent.length; index++) {
+    const currentChar = streamingContent[index]
+    if (escaped) {
+      rawValue += `\\${currentChar}`
+      escaped = false
+      continue
+    }
+    if (currentChar === '\\') {
+      escaped = true
+      continue
+    }
+    if (currentChar === '"') {
+      break
+    }
+    rawValue += currentChar
+  }
+
+  return decodePartialJsonString(rawValue).trim()
+}
+
 export const getServerUrl = (serverUrl?: string) => {
   if (serverUrl == null || serverUrl.length === 0) {
     return 'https://api.openai.com'
@@ -182,6 +295,54 @@ export const buildSummaryEmailMarkdown = (params: {
       success: summary.successCount,
       failed: summary.failedCount,
     },
+  }
+}
+
+const hashSummarySessionShape = (shapeKey: string) => {
+  let hash = 5381
+  for (let index = 0; index < shapeKey.length; index++) {
+    hash = ((hash << 5) + hash) + shapeKey.charCodeAt(index)
+    hash |= 0
+  }
+  return Math.abs(hash).toString(36)
+}
+
+export const buildSummarySessionKey = (params: {
+  url?: string
+  ctime?: number | null
+  segmentCount?: number
+  segmentShapeKey?: string
+}) => {
+  const {url, ctime, segmentCount, segmentShapeKey} = params
+  const shapeFingerprint = hashSummarySessionShape(segmentShapeKey ?? '')
+  return `${url ?? ''}|${ctime ?? ''}|${segmentCount ?? 0}|${shapeFingerprint}`
+}
+
+export const buildSummarySessionSyncInput = (params: {
+  sessionKey: string
+  url?: string
+  title?: string
+  ctime?: number | null
+  author?: string
+  segments?: Segment[]
+}): SummarySessionSyncInput => {
+  const {sessionKey, url, title, ctime, author, segments} = params
+
+  return {
+    sessionKey,
+    videoMeta: {
+      url,
+      title,
+      ctime,
+      author,
+    },
+    segments: (segments ?? []).map((segment) => ({
+      startIdx: segment.startIdx,
+      endIdx: segment.endIdx,
+      text: segment.text,
+      firstFrom: segment.items[0]?.from,
+      lastTo: segment.items[segment.items.length - 1]?.to,
+    })),
   }
 }
 

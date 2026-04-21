@@ -59,7 +59,21 @@ export const PROMPT_DEFAULTS = {
 {{segment}}`,
 }
 
+export const SUMMARY_REPAIR_PROMPT = `You will receive a model output that should represent a JSON object with a single field named "summary".
+
+Your task:
+1. Preserve the original meaning.
+2. Convert the content into valid JSON.
+3. Output only the JSON object, with exactly this shape:
+{"summary":"..."}
+4. Do not add markdown fences, explanations, or extra fields.
+
+If the original output already contains a useful summary body, keep it inside "summary" as markdown text.`
+
 export const TASK_EXPIRE_TIME = 15*60*1000
+export const SUMMARY_SESSION_RETENTION_MS = 7 * 24 * 60 * 60 * 1000
+export const SUMMARY_SESSION_MAX_COUNT = 50
+export const SUMMARY_EMAIL_PENDING_TIMEOUT_MS = 30 * 1000
 
 export const PAGE_MAIN = 'main'
 export const PAGE_SETTINGS = 'settings'
@@ -78,6 +92,7 @@ export const WORDS_MAX = 16000
 export const WORDS_STEP = 500
 export const SUMMARIZE_THRESHOLD = 100
 export const SUMMARIZE_LANGUAGE_DEFAULT = 'cn'
+export const SUMMARY_STRATEGY_DEFAULT: SummaryStrategyCode = 'balanced'
 export const SUMMARIZE_ALL_THRESHOLD = 5
 export const DEFAULT_SERVER_URL_OPENAI = 'https://api.openai.com'
 export const DEFAULT_SERVER_URL_GEMINI = 'https://generativelanguage.googleapis.com/v1beta/openai/'
@@ -116,6 +131,46 @@ for (const [modelCode, modelTokens] of Object.entries(KNOWN_MODEL_TOKENS)) {
     name: modelCode,
     tokens: modelTokens,
   }
+}
+
+export const SUMMARY_STRATEGIES: Array<{
+  code: SummaryStrategyCode
+  name: string
+  tip: string
+  temperature: number
+  stream: boolean
+  autoRetry: boolean
+  autoRepair: boolean
+}> = [{
+  code: 'stable',
+  name: '稳定',
+  tip: '更保守，优先降低格式错误，启用自动重试和格式修复。',
+  temperature: 0.1,
+  stream: false,
+  autoRetry: true,
+  autoRepair: true,
+}, {
+  code: 'balanced',
+  name: '平衡',
+  tip: '默认策略，兼顾速度与稳定性，启用流式、自动重试和格式修复。',
+  temperature: 0.2,
+  stream: true,
+  autoRetry: true,
+  autoRepair: true,
+}, {
+  code: 'fast',
+  name: '快速',
+  tip: '优先更快返回，保留流式，关闭自动重试和格式修复。',
+  temperature: 0.3,
+  stream: true,
+  autoRetry: false,
+  autoRepair: false,
+}]
+
+export const SUMMARY_STRATEGY_MAP: Record<SummaryStrategyCode, typeof SUMMARY_STRATEGIES[number]> = {
+  stable: SUMMARY_STRATEGIES[0],
+  balanced: SUMMARY_STRATEGIES[1],
+  fast: SUMMARY_STRATEGIES[2],
 }
 
 export const LANGUAGES = [{

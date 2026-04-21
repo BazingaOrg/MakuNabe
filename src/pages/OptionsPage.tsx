@@ -8,6 +8,8 @@ import {
   MODEL_DEFAULT,
   MODEL_MAP,
   PROMPT_TYPES,
+  SUMMARY_STRATEGIES,
+  SUMMARY_STRATEGY_DEFAULT,
   SUMMARIZE_LANGUAGE_DEFAULT,
   WORDS_RATE,
 } from '../consts/const'
@@ -79,6 +81,7 @@ const OptionsPage = () => {
   const [modelDiscoveryStatus, setModelDiscoveryStatus] = useState<ModelDiscoveryStatus>((envData.discoveredModels?.length ?? 0) > 0 ? 'success' : 'idle')
   const [modelDiscoveryError, setModelDiscoveryError] = useState<string>()
   const [summarizeLanguageValue, { onChange: onChangeSummarizeLanguageValue }] = useEventTarget({initialValue: envData.summarizeLanguage??SUMMARIZE_LANGUAGE_DEFAULT})
+  const [summaryStrategyValue, { onChange: onChangeSummaryStrategyValue }] = useEventTarget({initialValue: envData.summaryStrategy ?? SUMMARY_STRATEGY_DEFAULT})
   const [emailRecipientValue, { onChange: onChangeEmailRecipientValue }] = useEventTarget({initialValue: envData.emailRecipient ?? ''})
   const [emailWebhookUrlValue, { onChange: onChangeEmailWebhookUrlValue }] = useEventTarget({initialValue: envData.emailWebhookUrl ?? ''})
   const [emailSubjectTemplateValue, { onChange: onChangeEmailSubjectTemplateValue }] = useEventTarget({initialValue: envData.emailSubjectTemplate ?? '[MakuNabe Summary] {{title}}'})
@@ -134,12 +137,13 @@ const OptionsPage = () => {
       emailSubjectTemplate: emailSubjectTemplateValue,
       summarizeFloat: summarizeFloatValue,
       summarizeLanguage: summarizeLanguageValue,
+      summaryStrategy: summaryStrategyValue as SummaryStrategyCode,
       words: wordsValue,
       fontSize: fontSizeValue,
       prompts: promptsValue,
       chapterMode: chapterModeValue,
     }
-  }, [sidePanelValue, autoInsertValue, autoExpandValue, apiKeyValue, serverUrlValue, modelValue, customModelValue, customModelTokensValue, discoveredModelsValue, themeValue, summarizeEnableValue, emailAutoSendEnabledValue, emailRecipientValue, emailWebhookUrlValue, emailSubjectTemplateValue, summarizeFloatValue, summarizeLanguageValue, wordsValue, fontSizeValue, promptsValue, chapterModeValue])
+  }, [sidePanelValue, autoInsertValue, autoExpandValue, apiKeyValue, serverUrlValue, modelValue, customModelValue, customModelTokensValue, discoveredModelsValue, themeValue, summarizeEnableValue, emailAutoSendEnabledValue, emailRecipientValue, emailWebhookUrlValue, emailSubjectTemplateValue, summarizeFloatValue, summarizeLanguageValue, summaryStrategyValue, wordsValue, fontSizeValue, promptsValue, chapterModeValue])
 
   const applyFormEnvData = useCallback((nextEnvData: EnvData) => {
     setSidePanelChecked(nextEnvData.sidePanel)
@@ -159,6 +163,7 @@ const OptionsPage = () => {
     setModelDiscoveryStatus((nextEnvData.discoveredModels?.length ?? 0) > 0 ? 'success' : 'idle')
     setModelDiscoveryError(undefined)
     triggerValueChange(onChangeSummarizeLanguageValue, nextEnvData.summarizeLanguage ?? SUMMARIZE_LANGUAGE_DEFAULT)
+    triggerValueChange(onChangeSummaryStrategyValue, nextEnvData.summaryStrategy ?? SUMMARY_STRATEGY_DEFAULT)
     triggerValueChange(onChangeEmailRecipientValue, nextEnvData.emailRecipient ?? '')
     triggerValueChange(onChangeEmailWebhookUrlValue, nextEnvData.emailWebhookUrl ?? '')
     triggerValueChange(onChangeEmailSubjectTemplateValue, nextEnvData.emailSubjectTemplate ?? '[MakuNabe Summary] {{title}}')
@@ -166,7 +171,7 @@ const OptionsPage = () => {
     setFontSizeValue(nextEnvData.fontSize)
     setWordsValue(nextEnvData.words)
     setPromptsValue(nextEnvData.prompts ?? {})
-  }, [setSidePanelChecked, setAutoInsertChecked, setAutoExpandChecked, setSummarizeEnableChecked, setEmailAutoSendEnabledChecked, setSummarizeFloatChecked, setChapterModeChecked, triggerValueChange, onChangeApiKeyValue, onChangeModelValue, onChangeCustomModelValue, onChangeSummarizeLanguageValue, onChangeEmailRecipientValue, onChangeEmailWebhookUrlValue, onChangeEmailSubjectTemplateValue])
+  }, [setSidePanelChecked, setAutoInsertChecked, setAutoExpandChecked, setSummarizeEnableChecked, setEmailAutoSendEnabledChecked, setSummarizeFloatChecked, setChapterModeChecked, triggerValueChange, onChangeApiKeyValue, onChangeModelValue, onChangeCustomModelValue, onChangeSummarizeLanguageValue, onChangeSummaryStrategyValue, onChangeEmailRecipientValue, onChangeEmailWebhookUrlValue, onChangeEmailSubjectTemplateValue])
 
   const discoverModelsAndApply = useCallback(async (nextModelValue?: string) => {
     setModelDiscoveryStatus('loading')
@@ -443,6 +448,22 @@ const OptionsPage = () => {
           <select id='summarizeLanguage' className="select select-sm select-bordered" value={summarizeLanguageValue} onChange={onChangeSummarizeLanguageValue}>
             {LANGUAGES.map(language => <option key={language.code} value={language.code}>{language.name}</option>)}
           </select>
+        </FormItem>
+        <FormItem title='总结策略' htmlFor='summaryStrategy' tip='控制总结速度、流式展示、自动重试和格式修复。'>
+          <div className='flex flex-col gap-1'>
+            <select id='summaryStrategy' className="select select-sm select-bordered" value={summaryStrategyValue} onChange={(event) => {
+              onChangeSummaryStrategyValue({
+                target: {
+                  value: event.target.value as SummaryStrategyCode,
+                },
+              } as any)
+            }}>
+              {SUMMARY_STRATEGIES.map(strategy => <option key={strategy.code} value={strategy.code}>{strategy.name}</option>)}
+            </select>
+            <div className='text-xs desc-lighter'>
+              {SUMMARY_STRATEGIES.find(strategy => strategy.code === summaryStrategyValue)?.tip}
+            </div>
+          </div>
         </FormItem>
         <FormItem htmlFor='words' title='分段字数' tip='注意，不同模型有不同字数限制'>
           <div className='flex-1 flex flex-col'>

@@ -1,12 +1,10 @@
 import {useAppDispatch, useAppSelector} from './redux'
 import {useInterval, useMemoizedFn} from 'ahooks'
-import useTranslate from './useTranslate'
-import { buildSummaryEmailMarkdown, isSummaryEmpty } from '@/utils/bizUtil'
+import { buildSummarySessionKey, buildSummarySessionSyncInput, isSummaryEmpty } from '@/utils/bizUtil'
 import { useMessage } from './useMessageService'
-import dayjs from 'dayjs'
 import toast from 'react-hot-toast'
-import { setTempData } from '@/redux/envReducer'
-import { createElement, useRef } from 'react'
+import { syncSummarySessionState } from '@/redux/envReducer'
+import { createElement, useEffect, useMemo, useRef } from 'react'
 import {logMessagingError} from '@/utils/messageError'
 
 /**
@@ -15,22 +13,39 @@ import {logMessagingError} from '@/utils/messageError'
 const useTranslateService = () => {
   const emailToastIdPrefix = 'summary-email-status-'
   const summaryDoneToastIdPrefix = 'summary-done-status-'
-  const sendingVideoKeyRef = useRef<string | undefined>(undefined)
   const summaryDoneVideoKeyRef = useRef<string | undefined>(undefined)
-  const retryAtMapRef = useRef<Record<string, number>>({})
-  const lastErrorToastAtRef = useRef<number>(0)
+  const emailStatusToastKeyRef = useRef<string | undefined>(undefined)
   const dispatch = useAppDispatch()
-  const taskIds = useAppSelector(state => state.env.taskIds)
   const envData = useAppSelector(state => state.env.envData)
-  const tempData = useAppSelector(state => state.env.tempData)
   const segments = useAppSelector(state => state.env.segments)
   const url = useAppSelector(state => state.env.url)
   const title = useAppSelector(state => state.env.title)
   const ctime = useAppSelector(state => state.env.ctime)
   const author = useAppSelector(state => state.env.author)
-  const lastSummarizeTime = useAppSelector(state => state.env.lastSummarizeTime)
-  const {getTask} = useTranslate()
   const {sendExtension} = useMessage(Boolean(envData.sidePanel))
+  const summarySessionShapeKey = useMemo(() => {
+    return (segments ?? []).map((segment) => `${segment.startIdx}:${segment.endIdx}:${segment.text}`).join('|')
+  }, [segments])
+  const summarySessionKey = useMemo(() => buildSummarySessionKey({
+    url,
+    ctime,
+    segmentCount: segments?.length,
+    segmentShapeKey: summarySessionShapeKey,
+  }), [ctime, segments?.length, summarySessionShapeKey, url])
+  const summarySessionSyncInput = useMemo(() => {
+    if (segments == null || segments.length === 0) {
+      return undefined
+    }
+
+    return buildSummarySessionSyncInput({
+      sessionKey: summarySessionKey,
+      url,
+      title,
+      ctime,
+      author,
+      segments,
+    })
+  }, [author, ctime, summarySessionKey, summarySessionShapeKey, title, url])
 
   const showDismissibleToast = useMemoizedFn((params: {
     id: string
@@ -56,125 +71,83 @@ const useTranslateService = () => {
     })
   })
 
-  const tryAutoSendSummaryEmail = useMemoizedFn(async () => {
-    if (envData.emailAutoSendEnabled !== true) {
-      return
-    }
-    const emailRecipient = envData.emailRecipient?.trim() ?? ''
-    const emailWebhookUrl = envData.emailWebhookUrl?.trim() ?? ''
-    if (emailRecipient.length === 0 || emailWebhookUrl.length === 0) {
-      return
-    }
-    if (segments == null || segments.length === 0) {
+  const notifySummarySession = useMemoizedFn((session?: SummarySession) => {
+    if (session == null) {
       return
     }
 
-    const videoKey = `${url ?? ''}|${ctime ?? ''}|${segments.length}|${lastSummarizeTime ?? ''}`
-    if (tempData.summaryEmailSentVideoKey === videoKey) {
-      return
-    }
-    if (sendingVideoKeyRef.current === videoKey) {
-      return
-    }
-    const retryAt = retryAtMapRef.current[videoKey]
-    if (retryAt != null && Date.now() < retryAt) {
-      return
-    }
-
-    const allSummaryDone = segments.every((segment) => segment.summaries.brief?.status === 'done')
-    if (!allSummaryDone) {
-      return
-    }
-    if (summaryDoneVideoKeyRef.current !== videoKey) {
-      summaryDoneVideoKeyRef.current = videoKey
+    const runKey = `${session.sessionKey}|${session.runStartedAt ?? ''}`
+    const orderedSegments = Object.values(session.segments)
+    const allSummaryDone = orderedSegments.length > 0 && orderedSegments.every((segment) => segment.summary?.status === 'done')
+    if (allSummaryDone && summaryDoneVideoKeyRef.current !== runKey) {
+      summaryDoneVideoKeyRef.current = runKey
       showDismissibleToast({
-        id: `${summaryDoneToastIdPrefix}${videoKey}`,
+        id: `${summaryDoneToastIdPrefix}${runKey}`,
         icon: '✅',
         message: '当前视频分段总结已全部完成（点击可关闭）',
       })
     }
 
-    const hasSuccessSummary = segments.some((segment) => {
-      const summary = segment.summaries.brief
-      return summary?.status === 'done' && summary.error == null && !isSummaryEmpty(summary)
-    })
-    if (!hasSuccessSummary) {
-      dispatch(setTempData({ summaryEmailSentVideoKey: videoKey }))
-      showDismissibleToast({
-        id: `${emailToastIdPrefix}${videoKey}`,
-        icon: '❌',
-        message: '没有可发送的有效总结，已跳过自动邮件（点击可关闭）',
-      })
+    const emailState = session.email
+    if (emailState == null) {
       return
     }
 
-    const publishedAt = ctime != null ? dayjs(ctime * 1000).format('YYYY-MM-DD HH:mm:ss') : ''
-    const email = buildSummaryEmailMarkdown({
-      segments,
-    })
-    const configuredSubjectTemplate = envData.emailSubjectTemplate?.trim()
-    const subjectTemplate = configuredSubjectTemplate != null && configuredSubjectTemplate.length > 0
-      ? configuredSubjectTemplate
-      : '[MakuNabe Summary] {{title}}'
-    const subject = subjectTemplate
-      .replaceAll('{{title}}', title ?? 'Untitled')
-      .replaceAll('{{author}}', author ?? '')
-      .replaceAll('{{date}}', publishedAt)
+    const emailToastKey = `${runKey}|${emailState.status}|${emailState.error ?? ''}`
+    if (emailStatusToastKeyRef.current === emailToastKey) {
+      return
+    }
 
-    sendingVideoKeyRef.current = videoKey
-    try {
-      const response = await sendExtension(null, 'SEND_SUMMARY_EMAIL', {
-        webhookUrl: emailWebhookUrl,
-        payload: {
-          to: emailRecipient,
-          subject,
-          markdown: email.markdown,
-          videoMeta: {
-            title: title ?? '',
-            url: url ?? '',
-            author: author ?? '',
-            publishedAt,
-          },
-          segmentsStats: email.stats,
-        },
+    if (emailState.status === 'done' && emailState.lastSentRunStartedAt === session.runStartedAt) {
+      emailStatusToastKeyRef.current = emailToastKey
+      showDismissibleToast({
+        id: `${emailToastIdPrefix}${runKey}`,
+        icon: emailState.error != null ? '❌' : '✅',
+        message: emailState.error != null
+          ? '没有可发送的有效总结，已跳过自动邮件（点击可关闭）'
+          : '总结邮件发送成功（点击可关闭）',
       })
-
-      if (response.ok) {
-        dispatch(setTempData({ summaryEmailSentVideoKey: videoKey }))
-        retryAtMapRef.current[videoKey] = 0
-        showDismissibleToast({
-          id: `${emailToastIdPrefix}${videoKey}`,
-          icon: '✅',
-          message: '总结邮件发送成功（点击可关闭）',
-        })
-      } else {
-        // Retry later instead of permanently suppressing this video.
-        retryAtMapRef.current[videoKey] = Date.now() + 10 * 1000
-        if (Date.now() - lastErrorToastAtRef.current >= 10 * 1000) {
-          lastErrorToastAtRef.current = Date.now()
-          showDismissibleToast({
-            id: `${emailToastIdPrefix}${videoKey}`,
-            icon: '❌',
-            message: `总结邮件发送失败：${response.error ?? '未知错误'}（点击可关闭）`,
-          })
-        }
-      }
-    } finally {
-      if (sendingVideoKeyRef.current === videoKey) {
-        sendingVideoKeyRef.current = undefined
-      }
+    } else if (emailState.status === 'failed') {
+      emailStatusToastKeyRef.current = emailToastKey
+      showDismissibleToast({
+        id: `${emailToastIdPrefix}${runKey}`,
+        icon: '❌',
+        message: `总结邮件发送失败：${emailState.error ?? '未知错误'}（点击可关闭）`,
+      })
     }
   })
+
+  const syncSummarySession = useMemoizedFn(async () => {
+    if (segments == null || segments.length === 0) {
+      return
+    }
+
+    const session = await sendExtension(null, 'GET_SUMMARY_SESSION', {
+      sessionKey: summarySessionKey,
+    })
+    dispatch(syncSummarySessionState({session}))
+    notifySummarySession(session)
+  })
+
+  useEffect(() => {
+    if (summarySessionSyncInput == null) {
+      return
+    }
+
+    sendExtension(null, 'UPSERT_SUMMARY_SESSION', {
+      input: summarySessionSyncInput,
+    }).then((session) => {
+      dispatch(syncSummarySessionState({session}))
+      notifySummarySession(session)
+    }).catch((error) => {
+      logMessagingError('UPSERT_SUMMARY_SESSION', error)
+    })
+  }, [dispatch, notifySummarySession, sendExtension, summarySessionSyncInput])
 
   // 每0.5秒检测获取结果
   useInterval(async () => {
     try {
-      if (taskIds != null) {
-        for (const taskId of taskIds) {
-          await getTask(taskId)
-        }
-      }
-      await tryAutoSendSummaryEmail()
+      await syncSummarySession()
     } catch (error) {
       logMessagingError('TRANSLATE_SERVICE_INTERVAL', error)
     }

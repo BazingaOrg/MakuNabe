@@ -16,6 +16,7 @@ const ENV_DATA_KEYS: Array<keyof EnvData> = [
   'modelDiscoveryUpdatedAt',
   'summarizeEnable',
   'summarizeLanguage',
+  'summaryStrategy',
   'words',
   'summarizeFloat',
   'emailAutoSendEnabled',

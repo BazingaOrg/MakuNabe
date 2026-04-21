@@ -1,163 +1,455 @@
-# MakuNabe (Bazinga Fork)
+# MakuNabe
 
-MakuNabe is a subtitle helper extension for Bilibili.
+Subtitle helper for Bilibili with AI summaries.
 
-This fork focuses on practical daily use: subtitle browsing, AI summary, and easy configuration transfer.
+It shows subtitles, jumps by timestamp, summarizes subtitle segments with any OpenAI-compatible API, and can send the final summary to your email workflow through a webhook.
 
-## Features
+## Quick start
 
-- Show subtitle list and jump to exact timestamps
+If you only want the shortest path to a working setup, follow this order:
 
-- Generate segment summaries with OpenAI-compatible APIs
+1. Install the unpacked extension.
 
-- Discover available models from your configured endpoint
+2. Open the extension options page.
 
-- Copy or export subtitle/summary content
+3. Fill in `apiKey`, `serverUrl`, and `model`.
 
-- Import and export encrypted extension configuration
+4. Open a Bilibili video that already has subtitles and verify `点击生成` works.
 
-- Auto-send summary email through a webhook (optional)
+5. If you want email delivery, deploy the Cloudflare Worker example below.
 
-## For Users (GitHub Release)
+6. Copy the Worker URL into `emailWebhookUrl`, then turn on `emailAutoSendEnabled`.
 
-### Install from Release
+## Install
 
-1. Download the latest release asset (recommended: `dist.zip`).
+Load the unpacked extension from a release build.
 
-2. Extract it to a local folder.
+1. Download and extract `dist.zip`.
 
-3. Open `chrome://extensions` (or `edge://extensions`), enable Developer Mode, then click `Load unpacked`.
+2. Open `chrome://extensions` or `edge://extensions`.
 
-4. Select the extracted `dist` folder.
+3. Turn on Developer Mode.
 
-### 3-Minute Minimum Setup
+4. Click `Load unpacked`.
 
-Open the extension options page and configure the required fields:
+5. Select the extracted `dist` folder.
 
-- `apiKey`: your API key for the selected service
+After the extension is loaded, you can find it in:
 
-- `serverUrl`: API base URL (for OpenAI, use `https://api.openai.com`)
+- Chrome extensions page: `chrome://extensions`
 
-- `model`: click `Refresh Models`, then select one discovered model
+- Edge extensions page: `edge://extensions`
 
-Click `Save`, open a Bilibili video with subtitles, and trigger summary to verify everything works.
+## Setup
 
-### Required vs Optional Configuration
+Open the extension options page:
 
-Required for AI summary:
+1. Visit `chrome://extensions` or `edge://extensions`.
+
+2. Find `MakuNabe`.
+
+3. Click `Details`.
+
+4. Click `Extension options`.
+
+The options page contains the sections `OpenAI config` and `总结配置`.
+
+Configure the required fields first:
 
 - `apiKey`
 
 - `serverUrl`
 
-- `model` (or `customModel`)
+- `model` or `customModel`
 
-Optional for better experience:
+Then open a Bilibili video with subtitles:
 
-- `theme`, `fontSize`, side panel behavior
+- Site: https://www.bilibili.com
 
-- summary language, segment words, custom prompts
+- Example path shape: `https://www.bilibili.com/video/BV...`
 
-- `emailAutoSendEnabled`, `emailRecipient`, `emailWebhookUrl`, `emailSubjectTemplate`
+Open a video page that already exposes subtitle data, then click `点击生成`.
 
-- encrypted config import/export
+Useful optional settings:
 
-### Common Endpoint Examples
+- `summaryStrategy`: `stable`, `balanced`, or `fast`
 
-OpenAI:
+- `summarizeLanguage`
 
-- `serverUrl`: `https://api.openai.com`
+- `words`
 
-Local Ollama:
+- `chapterMode`
 
-```bash
-OLLAMA_ORIGINS=chrome-extension://*,moz-extension://*,safari-web-extension://*
+- `emailAutoSendEnabled`
+
+- `emailRecipient`
+
+- `emailWebhookUrl`
+
+- `emailSubjectTemplate`
+
+Recommended setup order inside the options page:
+
+1. `OpenAI config`:
+
+   - `apiKey`
+   - `serverUrl`
+   - `model` or `customModel`
+
+2. `总结配置`:
+
+   - `启用总结`
+   - `总结语言`
+   - `总结策略`
+   - `分段字数`
+
+3. Email-related fields:
+
+   - `自动发邮件`
+   - `默认收件人`
+   - `回调地址`
+   - `邮件主题模板`
+
+## Example config
+
+Use this as a minimal working example for the extension options page.
+
+Replace the values marked as your own values before using it.
+
+```text
+OpenAI config
+
+apiKey = sk-your-api-key
+serverUrl = https://api.openai.com
+model = gpt-4o-mini
+
+总结配置
+
+启用总结 = on
+总结语言 = 中文简体
+总结策略 = 平衡
+分段字数 = 4000
+
+邮件配置
+
+自动发邮件 = on
+默认收件人 = you@example.com
+回调地址 = https://your-worker.your-subdomain.workers.dev
+邮件主题模板 = [MakuNabe Summary] {{title}}
 ```
 
-- `serverUrl`: `http://localhost:11434`
+If you do not want email yet, start with this smaller config first:
 
-- `model`: refresh and pick one discovered model (or type a custom model name)
+```text
+apiKey = sk-your-api-key
+serverUrl = https://api.openai.com
+model = gpt-4o-mini
+启用总结 = on
+总结语言 = 中文简体
+总结策略 = 平衡
+```
+
+Field notes:
+
+- `serverUrl`
+
+  - OpenAI: `https://api.openai.com`
+  - Gemini OpenAI-compatible endpoint: `https://generativelanguage.googleapis.com/v1beta/openai/`
+
+- `model`
+
+  - If your provider supports model discovery, choose from the dropdown.
+  - If your provider does not expose models, use `customModel`.
+
+- `回调地址`
+
+  - This must be the public Cloudflare Worker URL, not the Cloudflare dashboard URL.
+
+## Email webhook
+
+The extension does not send email directly.
+
+It sends a JSON `POST` request to `emailWebhookUrl` after all segment summaries finish. Your webhook can forward that payload to Resend, MailChannels, SendGrid, or any other provider.
+
+Payload shape:
+
+```json
+{
+  "to": "you@example.com,friend@example.com",
+  "subject": "[MakuNabe Summary] Video title",
+  "markdown": "## Summary\n\n...",
+  "videoMeta": {
+    "title": "Video title",
+    "url": "https://www.bilibili.com/video/BV...",
+    "author": "Channel name",
+    "publishedAt": "2026-04-21 20:00:00"
+  },
+  "segmentsStats": {
+    "total": 8,
+    "success": 8,
+    "failed": 0
+  }
+}
+```
+
+Successful responses should return:
+
+```json
+{
+  "ok": true
+}
+```
+
+If you want multiple recipients, separate them with commas in `emailRecipient`. Your webhook must split and handle them.
+
+## Cloudflare Worker
+
+This is a sanitized version of the current Worker pattern. It accepts the extension webhook payload, renders the markdown into simple HTML, and sends email through Resend.
+
+It already supports multiple recipients by splitting `to` on commas.
+
+Deployment path:
+
+1. Open the Cloudflare dashboard: https://dash.cloudflare.com
+
+2. Go to `Workers & Pages`.
+
+3. Click `Create application` or `Create`.
+
+4. Create a Worker and paste the code below.
+
+5. Add the Worker secrets `RESEND_API_KEY` and `MAIL_FROM`.
+
+6. Deploy the Worker.
+
+7. Copy the Worker URL, for example `https://your-worker.your-subdomain.workers.dev`.
+
+8. Paste that URL into the extension field `emailWebhookUrl`.
+
+This example assumes you use Resend as the email provider. Before deploying the Worker, prepare these in the Resend dashboard:
+
+- API keys page: https://resend.com/api-keys
+
+- Domains page: https://resend.com/domains
+
+Your `MAIL_FROM` must use a sender address that Resend accepts for your verified domain.
+
+```ts
+export default {
+  async fetch(request, env) {
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders() })
+    }
+
+    if (request.method !== 'POST') {
+      return json({ ok: false, error: 'Method not allowed' }, 405)
+    }
+
+    try {
+      const body = await request.json()
+      const { to, subject, markdown, videoMeta, segmentsStats } = body ?? {}
+
+      if (!to || !subject || !markdown) {
+        return json({ ok: false, error: 'Missing required fields' }, 400)
+      }
+
+      const summaryHtml = markdownToHtml(String(markdown))
+      const html = `
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;line-height:1.7;color:#111827;">
+          <h2 style="margin:0 0 12px;">Video Summary</h2>
+          <p style="margin:4px 0;"><b>Title:</b> ${escapeHtml(videoMeta?.title ?? '')}</p>
+          <p style="margin:4px 0;"><b>URL:</b> <a href="${escapeHtml(videoMeta?.url ?? '')}">${escapeHtml(videoMeta?.url ?? '')}</a></p>
+          <p style="margin:4px 0;"><b>Author:</b> ${escapeHtml(videoMeta?.author ?? '')}</p>
+          <p style="margin:4px 0;"><b>Published At:</b> ${escapeHtml(videoMeta?.publishedAt ?? '')}</p>
+          <p style="margin:4px 0;"><b>Segments:</b> total=${segmentsStats?.total ?? 0}, success=${segmentsStats?.success ?? 0}, failed=${segmentsStats?.failed ?? 0}</p>
+          <hr style="margin:16px 0;border:none;border-top:1px solid #e5e7eb;" />
+          <div>${summaryHtml}</div>
+        </div>
+      `
+
+      const resp = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: env.MAIL_FROM,
+          to: to.split(',').map((item) => item.trim()).filter(Boolean),
+          subject,
+          html,
+          text: String(markdown),
+        }),
+      })
+
+      const data = await resp.json()
+      if (!resp.ok) {
+        return json({ ok: false, error: data?.message ?? 'Resend send failed' }, 500)
+      }
+
+      return json({ ok: true, requestId: data?.id ?? '' }, 200)
+    } catch (error) {
+      return json({ ok: false, error: String(error) }, 500)
+    }
+  },
+}
+
+function markdownToHtml(markdown) {
+  const lines = String(markdown).replace(/\r\n/g, '\n').split('\n')
+  const out = []
+  let inList = false
+
+  const inline = (text) => {
+    let s = escapeHtml(text)
+    s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    s = s.replace(/\*(.+?)\*/g, '<em>$1</em>')
+    s = s.replace(/`(.+?)`/g, '<code>$1</code>')
+    return s
+  }
+
+  for (const raw of lines) {
+    const line = raw.trim()
+
+    if (!line) {
+      if (inList) {
+        out.push('</ul>')
+        inList = false
+      }
+      continue
+    }
+
+    if (line.startsWith('- ')) {
+      if (!inList) {
+        out.push('<ul style="margin:8px 0 8px 20px;padding:0;">')
+        inList = true
+      }
+      out.push(`<li style="margin:4px 0;">${inline(line.slice(2))}</li>`)
+      continue
+    }
+
+    if (inList) {
+      out.push('</ul>')
+      inList = false
+    }
+
+    if (line.startsWith('### ')) {
+      out.push(`<h3 style="margin:12px 0 6px;">${inline(line.slice(4))}</h3>`)
+    } else if (line.startsWith('## ')) {
+      out.push(`<h2 style="margin:14px 0 8px;">${inline(line.slice(3))}</h2>`)
+    } else if (line.startsWith('# ')) {
+      out.push(`<h1 style="margin:16px 0 10px;">${inline(line.slice(2))}</h1>`)
+    } else {
+      out.push(`<p style="margin:8px 0;">${inline(line)}</p>`)
+    }
+  }
+
+  if (inList) out.push('</ul>')
+  return out.join('')
+}
+
+function corsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  }
+}
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      ...corsHeaders(),
+      'Content-Type': 'application/json; charset=utf-8',
+    },
+  })
+}
+
+function escapeHtml(input) {
+  return String(input)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+}
+```
+
+Set the following Worker bindings or secrets:
+
+- `RESEND_API_KEY`
+
+- `MAIL_FROM`
+
+After deployment, your final mapping should look like this:
+
+- Resend dashboard:
+
+  - create API key at `https://resend.com/api-keys`
+  - verify sender domain at `https://resend.com/domains`
+
+- Cloudflare dashboard:
+
+  - deploy the Worker at `https://dash.cloudflare.com`
+  - set `RESEND_API_KEY`
+  - set `MAIL_FROM`
+  - copy the public Worker URL
+
+- MakuNabe options page:
+
+  - `默认收件人` = your target inbox, or multiple emails separated by commas
+  - `回调地址` = your Worker URL
+  - `自动发邮件` = on
+  - `邮件主题模板` = optional
+
+## Verify the flow
+
+Use this checklist after setup:
+
+1. Open `chrome://extensions` or `edge://extensions`.
+
+2. Enter `MakuNabe` -> `Details` -> `Extension options`.
+
+3. Confirm `apiKey`, `serverUrl`, and `model` are filled in.
+
+4. Confirm `emailWebhookUrl` is your live Worker URL.
+
+5. Confirm `emailRecipient` is not empty if email is enabled.
+
+6. Visit a subtitle-enabled Bilibili video page.
+
+7. Click `点击生成`.
+
+8. Wait for all segment summaries to finish.
+
+9. If `emailAutoSendEnabled` is on, the extension sends the final merged markdown to your Worker only after the summary is fully completed.
+
+## Notes
+
+- `balanced` is the default strategy.
+
+- Summary jobs run in the extension background, so closing the page does not immediately stop them.
+
+- The extension keeps summary sessions for retries and recovery, then removes old sessions with retention rules.
 
 ## Troubleshooting
 
-### Model discovery failed
+- No subtitles: the video may not provide subtitle data.
 
-- Check `serverUrl` and `apiKey`.
+- Model discovery fails: check `serverUrl`, `apiKey`, and `GET /models` support.
 
-- Confirm the endpoint supports `GET /models`.
+- Summary fails: reduce `words` or switch to `stable`.
 
-- Try opening the endpoint from your browser to verify connectivity.
+- Webhook fails: confirm the endpoint accepts JSON `POST` and returns `{ "ok": true }`.
 
-### Summary failed
-
-- Confirm the selected model supports chat completion.
-
-- Reduce segment words if token-related errors appear.
-
-- Re-run with a smaller video segment for quick validation.
-
-### Webhook email failed
-
-- Verify `emailWebhookUrl` is reachable and accepts JSON `POST`.
-
-- Check your webhook response includes success semantics expected by this extension.
-
-### Video has no subtitle panel
-
-- The video may not provide subtitles.
-
-- Refresh the page and re-open the extension.
-
-- Confirm the page URL matches `https://*.bilibili.com/*`.
-
-### Network or permission related errors
-
-- This release uses broad host permission to support OpenAI-compatible endpoints and webhook URLs out of the box.
-
-- If you modified `manifest.json`, ensure your target domain is still permitted.
-
-## For Developers
-
-### Requirements
-
-- Node.js `18.15.0`
-
-- `pnpm`
-
-### Build and Load
+## Development
 
 ```bash
-pnpm install
-pnpm run build
+npm install
+npm run build
 ```
 
 Load the unpacked extension from `dist`.
-
-### Local Development
-
-```bash
-pnpm run dev
-```
-
-If subtitle panel injection fails with CSP-like behavior during development, check `dist/manifest.json` and keep `web_accessible_resources[*].use_dynamic_url` as `false`.
-
-## Release Notes and Artifacts
-
-Each release should include:
-
-- `dist.zip` (ready for users to load unpacked)
-
-- release notes summary
-
-- known issues section
-
-- compatibility or migration note (if configuration behavior changes)
-
-Write release notes directly in the GitHub Release description.
-
-## Credits
-
-This project is based on the original open-source work by `IndieKKY`, and is maintained as a personal fork with custom changes.
 
 ## License
 

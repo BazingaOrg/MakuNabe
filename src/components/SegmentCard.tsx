@@ -6,7 +6,7 @@ import {SUMMARIZE_THRESHOLD, SUMMARIZE_TYPES} from '../consts/const'
 import useTranslate from '../hooks/useTranslate'
 import {BsDashSquare, BsPlusSquare, RiFileCopy2Line} from 'react-icons/all'
 import toast from 'react-hot-toast'
-import {getLastTime, getSummaryStr, isSummaryEmpty} from '../utils/bizUtil'
+import {extractStreamingSummaryPreview, getLastTime, getSummaryStr, isSummaryEmpty} from '../utils/bizUtil'
 import {useInViewport} from 'ahooks'
 import SegmentItem from './SegmentItem'
 import {stopPopFunc} from '../utils/util'
@@ -22,6 +22,27 @@ const Summarize = (props: {
   const envData = useAppSelector(state => state.env.envData)
   const fontSize = useAppSelector(state => state.env.envData.fontSize)
   const {addSummarizeTask} = useTranslate()
+  const streamingPreview = useMemo(() => extractStreamingSummaryPreview(summary?.streamingContent), [summary?.streamingContent])
+  const pendingLabel = useMemo(() => {
+    switch (summary?.recoveryStage) {
+      case 'retrying':
+        return '重试中'
+      case 'repairing':
+        return '修复格式中'
+      default:
+        return '生成中'
+    }
+  }, [summary?.recoveryStage])
+  const pendingHint = useMemo(() => {
+    switch (summary?.recoveryStage) {
+      case 'retrying':
+        return '首次请求失败，正在自动重试'
+      case 'repairing':
+        return '正在把已有输出修复为合法格式'
+      default:
+        return '正在生成总结内容'
+    }
+  }, [summary?.recoveryStage])
 
   const onGenerate = useCallback(() => {
     const apiKey = envData.apiKey
@@ -49,13 +70,18 @@ const Summarize = (props: {
         <div className={classNames('font-medium max-w-[90%] overflow-x-hidden', fontSize === 'large' ? 'text-sm' : 'text-xs')}>
           <Markdown content={summary.content.summary}/>
         </div>}
+      {summary?.status === 'pending' && streamingPreview.length > 0 &&
+        <div className={classNames('font-medium max-w-[90%] overflow-x-hidden text-base-content/80', fontSize === 'large' ? 'text-sm' : 'text-xs')}>
+          <Markdown content={streamingPreview}/>
+        </div>}
     </div>
     <div className='flex flex-col justify-center items-center'>
       {segment.text.length < SUMMARIZE_THRESHOLD && <div className='desc-lighter text-xs'>文字过短，无法总结.</div>}
       {segment.text.length >= SUMMARIZE_THRESHOLD && (summary == null || summary.status !== 'done' || summary.error != null) && <button disabled={summary?.status === 'pending'}
                 className={classNames('btn btn-link btn-xs', summary?.status === 'pending' && 'loading')}
-                onClick={onGenerate}>{(summary == null) || summary.status === 'init' ? '点击生成' : (summary.status === 'pending' ? '生成中' : '重新生成')}</button>}
+                onClick={onGenerate}>{(summary == null) || summary.status === 'init' ? '点击生成' : (summary.status === 'pending' ? pendingLabel : '重新生成')}</button>}
       {((summary == null) || summary.status === 'init') && <div className='desc-lighter text-xs'>{SUMMARIZE_TYPES.brief.desc}</div>}
+      {summary?.status === 'pending' && <div className='desc-lighter text-xs'>{pendingHint}</div>}
       {summary?.error != null && summary.error.length > 0 && <div className='text-xs text-error'>{summary.error}</div>}
     </div>
     {float !== true && <div className='mx-2 my-1 h-[1px] bg-base-300'></div>}

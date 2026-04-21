@@ -1,6 +1,6 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit'
 import {find} from 'lodash-es'
-import {DEFAULT_SERVER_URL_OPENAI, TOTAL_HEIGHT_DEF} from '../consts/const'
+import {DEFAULT_SERVER_URL_OPENAI, SUMMARY_STRATEGY_DEFAULT, TOTAL_HEIGHT_DEF} from '../consts/const'
 
 interface EnvState {
   envData: EnvData
@@ -49,6 +49,7 @@ const initialState: EnvState = {
   envData: {
     serverUrl: DEFAULT_SERVER_URL_OPENAI,
     summarizeEnable: true,
+    summaryStrategy: SUMMARY_STRATEGY_DEFAULT,
     emailAutoSendEnabled: false,
     autoExpand: true,
     theme: 'light',
@@ -174,6 +175,23 @@ export const slice = createSlice({
         }
       }
     },
+    syncSummarySessionState: (state, action: PayloadAction<{
+      session?: SummarySession
+    }>) => {
+      const session = action.payload.session
+      if (session == null) {
+        return
+      }
+
+      state.lastSummarizeTime = session.runStartedAt
+
+      for (const segment of state.segments ?? []) {
+        const snapshot = session.segments[String(segment.startIdx)]
+        if (snapshot?.summary != null) {
+          segment.summaries.brief = snapshot.summary
+        }
+      }
+    },
     setSegmentFold: (state, action: PayloadAction<{
       segmentStartIdx: number
       fold: boolean
@@ -258,6 +276,7 @@ export const {
   setSummaryContent,
   setSummaryStatus,
   setSummaryError,
+  syncSummarySessionState,
   setTitle,
   setSegments,
   setLastSummarizeTime,

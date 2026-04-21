@@ -52,6 +52,18 @@ interface ExtensionSendSummaryEmailMessage extends ExtensionMessage<{
   method: 'SEND_SUMMARY_EMAIL'
 }
 
+interface ExtensionUpsertSummarySessionMessage extends ExtensionMessage<{
+  input: SummarySessionSyncInput
+}, SummarySession> {
+  method: 'UPSERT_SUMMARY_SESSION'
+}
+
+interface ExtensionGetSummarySessionMessage extends ExtensionMessage<{
+  sessionKey: string
+}, SummarySession | undefined> {
+  method: 'GET_SUMMARY_SESSION'
+}
+
 interface ExtensionDiscoverModelsMessage extends ExtensionMessage<{
   serverUrl?: string
   apiKey?: string
@@ -61,7 +73,7 @@ interface ExtensionDiscoverModelsMessage extends ExtensionMessage<{
   method: 'DISCOVER_MODELS'
 }
 
-export type AllExtensionMessages = ExtensionGetTabIdMessage | ExtensionCloseSidePanelMessage | ExtensionAddTaskMessage | ExtensionGetTaskMessage | ExtensionShowFlagMessage | ExtensionSendSummaryEmailMessage | ExtensionDiscoverModelsMessage
+export type AllExtensionMessages = ExtensionGetTabIdMessage | ExtensionCloseSidePanelMessage | ExtensionAddTaskMessage | ExtensionGetTaskMessage | ExtensionShowFlagMessage | ExtensionSendSummaryEmailMessage | ExtensionUpsertSummarySessionMessage | ExtensionGetSummarySessionMessage | ExtensionDiscoverModelsMessage
 
 // inject
 interface InjectToggleDisplayMessage extends InjectMessage<{}> {

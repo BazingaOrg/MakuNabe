@@ -20,6 +20,7 @@ export default defineManifest(async (env) => ({
   "permissions": [
     "sidePanel",
     "storage",
+    "alarms",
   ],
   "host_permissions": [
     "<all_urls>"

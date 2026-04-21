@@ -22,6 +22,7 @@ interface EnvData {
 
   summarizeEnable?: boolean
   summarizeLanguage?: string
+  summaryStrategy?: SummaryStrategyCode
   words?: number
   summarizeFloat?: boolean
   emailAutoSendEnabled?: boolean
@@ -65,6 +66,57 @@ interface Task {
   resp?: any
 }
 
+interface SummarySessionSegmentSnapshot {
+  startIdx: number
+  endIdx: number
+  text: string
+  firstFrom?: number
+  lastTo?: number
+  summary?: Summary
+  updatedAt: number
+}
+
+interface SummarySessionVideoMeta {
+  url?: string
+  title?: string
+  ctime?: number | null
+  author?: string
+}
+
+interface SummarySession {
+  sessionKey: string
+  createdAt: number
+  updatedAt: number
+  runStartedAt?: number
+  videoMeta: SummarySessionVideoMeta
+  segmentCount: number
+  email?: SummarySessionEmailState
+  segments: Record<string, SummarySessionSegmentSnapshot>
+}
+
+interface SummarySessionEmailState {
+  status: 'idle' | 'pending' | 'done' | 'failed'
+  lastAttemptAt?: number
+  lastSentRunStartedAt?: number
+  retryAt?: number
+  error?: string
+  attemptCount?: number
+}
+
+interface SummarySessionSyncSegmentInput {
+  startIdx: number
+  endIdx: number
+  text: string
+  firstFrom?: number
+  lastTo?: number
+}
+
+interface SummarySessionSyncInput {
+  sessionKey: string
+  videoMeta: SummarySessionVideoMeta
+  segments: SummarySessionSyncSegmentInput[]
+}
+
 type ShowElement = string | JSX.Element | undefined
 
 interface Transcript {
@@ -103,6 +155,8 @@ interface Summary {
   status: SummaryStatus
   error?: string
   content?: any
+  streamingContent?: string
+  recoveryStage?: SummaryRecoveryStage
 }
 
 /**
@@ -116,3 +170,5 @@ interface BriefSummary extends Summary {
 
 type SummaryStatus = 'init' | 'pending' | 'done'
 type SummaryType = 'brief'
+type SummaryRecoveryStage = 'generating' | 'retrying' | 'repairing'
+type SummaryStrategyCode = 'stable' | 'balanced' | 'fast'

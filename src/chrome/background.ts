@@ -4,6 +4,8 @@ import { DEFAULT_USE_PORT, STORAGE_ENV} from '@/consts/const'
 import { AllExtensionMessages } from '@/message-typings'
 import { ExtensionMessaging, TAG_TARGET_INJECT } from '../message'
 import {discoverModels} from './openaiService'
+import {cleanupSummarySessions, getSummarySession, markSummarySegmentPending, upsertSummarySession} from './summarySessionService'
+import {retrySummaryEmailFromAlarm} from './summaryEmailService'
 
 const setBadgeOk = async (tabId: number, ok: boolean) => {
   await chrome.action.setBadgeText({
@@ -74,6 +76,18 @@ const methods: {
     return context.tabId
   },
   ADD_TASK: async (params, context) => {
+    const summarySessionKey = params.taskDef.extra?.summarySessionKey as string | undefined
+    const summaryRunStartedAt = params.taskDef.extra?.summaryRunStartedAt as number | undefined
+    const summarySegmentStartIdx = params.taskDef.extra?.startIdx as number | undefined
+    if (typeof summarySessionKey === 'string' && summarySessionKey.length > 0 &&
+      typeof summaryRunStartedAt === 'number' && typeof summarySegmentStartIdx === 'number') {
+      await markSummarySegmentPending({
+        sessionKey: summarySessionKey,
+        runStartedAt: summaryRunStartedAt,
+        segmentStartIdx: summarySegmentStartIdx,
+      })
+    }
+
     // 新建任务
     const task: Task = {
       id: v4(),
@@ -124,6 +138,12 @@ const methods: {
         error: error?.name === 'AbortError' ? 'Webhook request timeout' : (error?.message ?? 'Unknown webhook error'),
       }
     }
+  },
+  UPSERT_SUMMARY_SESSION: async (params, context) => {
+    return await upsertSummarySession(params.input)
+  },
+  GET_SUMMARY_SESSION: async (params, context) => {
+    return await getSummarySession(params.sessionKey)
   },
   DISCOVER_MODELS: async (params, context) => {
     return await discoverModels({
@@ -189,3 +209,8 @@ chrome.action.onClicked.addListener(async (tab) => {
 })
 
 initTaskService()
+cleanupSummarySessions().catch(console.error)
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  retrySummaryEmailFromAlarm(alarm.name).catch(console.error)
+})

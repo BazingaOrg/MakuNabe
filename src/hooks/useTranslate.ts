@@ -1,11 +1,7 @@
 import {useAppDispatch, useAppSelector} from './redux'
 import {useCallback} from 'react'
 import {
-  addTaskId,
-  delTaskId,
   setLastSummarizeTime,
-  setSummaryContent,
-  setSummaryError,
   setSummaryStatus,
   setReviewAction,
   setTempData
@@ -15,12 +11,12 @@ import {
   PROMPT_DEFAULTS,
   PROMPT_TYPE_SUMMARIZE_BRIEF,
   SUMMARIZE_LANGUAGE_DEFAULT,
+  SUMMARY_STRATEGY_DEFAULT,
+  SUMMARY_STRATEGY_MAP,
   SUMMARIZE_THRESHOLD,
 } from '../consts/const'
 import toast from 'react-hot-toast'
-import {useMemoizedFn} from 'ahooks/es'
-import {extractJsonObject, getModel} from '../utils/bizUtil'
-import {formatTime} from '../utils/util'
+import {buildSummarySessionKey, buildSummarySessionSyncInput, getModel} from '../utils/bizUtil'
 import { useMessage } from './useMessageService'
 
 const resolveTemperature = (envData: EnvData, defaultTemperature: number) => {
@@ -47,10 +43,17 @@ const useTranslate = () => {
   const envData = useAppSelector(state => state.env.envData)
   const summarizeLanguage = LANGUAGES_MAP[envData.summarizeLanguage??SUMMARIZE_LANGUAGE_DEFAULT]
   const title = useAppSelector(state => state.env.title)
+  const url = useAppSelector(state => state.env.url)
+  const ctime = useAppSelector(state => state.env.ctime)
+  const author = useAppSelector(state => state.env.author)
+  const segments = useAppSelector(state => state.env.segments)
   const reviewed = useAppSelector(state => state.env.tempData.reviewed)
   const reviewAction = useAppSelector(state => state.env.reviewAction)
   const reviewActions = useAppSelector(state => state.env.tempData.reviewActions)
   const {sendExtension} = useMessage(Boolean(envData.sidePanel))
+  const summarySessionShapeKey = useCallback((segmentsToHash?: Segment[]) => {
+    return (segmentsToHash ?? []).map((item) => `${item.startIdx}:${item.endIdx}:${item.text}`).join('|')
+  }, [])
 
   const addSummarizeTask = useCallback(async (segment: Segment) => {
     // review action
@@ -62,15 +65,30 @@ const useTranslate = () => {
     }
 
     if (segment.text.length >= SUMMARIZE_THRESHOLD) {
-      let subtitles = ''
-      for (const item of segment.items) {
-        subtitles += formatTime(item.from) + ' ' + item.content + '\n'
-      }
+      const summaryStrategy = SUMMARY_STRATEGY_MAP[envData.summaryStrategy ?? SUMMARY_STRATEGY_DEFAULT]
+      const summarySessionKey = buildSummarySessionKey({
+        url,
+        ctime,
+        segmentCount: segments?.length,
+        segmentShapeKey: summarySessionShapeKey(segments),
+      })
+      const summaryRunStartedAt = Date.now()
+      await sendExtension(null, 'UPSERT_SUMMARY_SESSION', {
+        input: buildSummarySessionSyncInput({
+          sessionKey: summarySessionKey,
+          url,
+          title,
+          ctime,
+          author,
+          segments,
+        }),
+      })
+
       let prompt = resolvePromptTemplate(envData)
       // replace params
       prompt = prompt.replaceAll('{{language}}', summarizeLanguage.name)
       prompt = prompt.replaceAll('{{title}}', title??'')
-      prompt = prompt.replaceAll('{{subtitles}}', subtitles)
+      prompt = prompt.replaceAll('{{subtitles}}', segment.text)
       prompt = prompt.replaceAll('{{segment}}', segment.text)
       if (prompt.trim().length === 0) {
         toast.error('提示词模板为空')
@@ -88,68 +106,29 @@ const useTranslate = () => {
               content: prompt,
             }
           ],
-          temperature: resolveTemperature(envData, 0.5),
+          temperature: resolveTemperature(envData, summaryStrategy.temperature),
           n: 1,
-          stream: false,
+          stream: summaryStrategy.stream,
         },
         extra: {
           type: 'summarize',
           startIdx: segment.startIdx,
           apiKey: envData.apiKey,
+          summarySessionKey,
+          summaryRunStartedAt,
+          summaryStrategyCode: summaryStrategy.code,
+          summaryAutoRetry: summaryStrategy.autoRetry,
+          summaryAutoRepair: summaryStrategy.autoRepair,
         }
       }
       console.debug('addSummarizeTask', taskDef)
       dispatch(setSummaryStatus({segmentStartIdx: segment.startIdx, type: 'brief', status: 'pending'}))
-      dispatch(setLastSummarizeTime(Date.now()))
-      const task = await sendExtension(null, 'ADD_TASK', {taskDef})
-      dispatch(addTaskId(task.id))
+      dispatch(setLastSummarizeTime(summaryRunStartedAt))
+      await sendExtension(null, 'ADD_TASK', {taskDef})
     }
-  }, [dispatch, envData, reviewAction, reviewActions, reviewed, sendExtension, summarizeLanguage.name, title])
+  }, [author, ctime, dispatch, envData, reviewAction, reviewActions, reviewed, segments, sendExtension, summarySessionShapeKey, summarizeLanguage.name, title, url])
 
-  const handleSummarize = useMemoizedFn((task: Task, content?: string) => {
-    content = extractJsonObject(content??'')
-    let obj
-    try {
-      obj = JSON.parse(content)
-    } catch (e) {
-      task.error = 'failed'
-    }
-
-    dispatch(setSummaryContent({
-      segmentStartIdx: task.def.extra.startIdx,
-      type: 'brief',
-      content: obj,
-    }))
-    dispatch(setSummaryStatus({segmentStartIdx: task.def.extra.startIdx, type: 'brief', status: 'done'}))
-    dispatch(setSummaryError({segmentStartIdx: task.def.extra.startIdx, type: 'brief', error: task.error}))
-    console.debug('setSummary', task.def.extra.startIdx, 'brief', obj, task.error)
-  })
-
-  const getTask = useCallback(async (taskId: string) => {
-    const taskResp = await sendExtension(null, 'GET_TASK', {taskId})
-    if (taskResp.code === 'ok') {
-      console.debug('getTask', taskResp.task)
-      const task: Task = taskResp.task
-      const taskType: string | undefined = task.def.extra?.type
-      const content = task.resp?.choices?.[0]?.message?.content?.trim()
-      if (task.status === 'done') {
-        // 异常提示
-        if (task.error != null && task.error.length > 0) {
-          toast.error(`总结失败：${task.error}`)
-        }
-        // 删除任务
-        dispatch(delTaskId(taskId))
-        // 处理结果
-        if (taskType === 'summarize') {
-          handleSummarize(task, content)
-        }
-      }
-    } else {
-      dispatch(delTaskId(taskId))
-    }
-  }, [dispatch, handleSummarize, sendExtension])
-
-  return {getTask, addSummarizeTask}
+  return {addSummarizeTask}
 }
 
 export default useTranslate
