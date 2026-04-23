@@ -3,7 +3,7 @@
   "name": "makunabe",
   "version": "0.2.0",
   "type": "module",
-  "description": "哔哩哔哩字幕列表",
+  "description": "Bilibili 字幕助手：字幕查看、时间跳转、AI 总结、导出与邮件推送",
   "main": "index.js",
   "packageManager": "npm@10.9.2",
   "engines": {
