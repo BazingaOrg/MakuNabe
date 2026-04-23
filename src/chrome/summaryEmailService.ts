@@ -1,6 +1,6 @@
 import {SUMMARY_EMAIL_PENDING_TIMEOUT_MS, STORAGE_ENV} from '@/consts/const'
 import {saveSummarySession, getSummarySession} from './summarySessionService'
-import {getTimeDisplay} from '@/utils/bizUtil'
+import {getSummaryStr, isSummaryEmpty} from '@/utils/bizUtil'
 import dayjs from 'dayjs'
 
 const SUMMARY_EMAIL_RETRY_PREFIX = 'makunabe-summary-email-retry:'
@@ -63,40 +63,18 @@ const loadEnvData = async (): Promise<EnvData> => {
 }
 
 const buildSummaryEmailPayload = (session: SummarySession) => {
-  const orderedSegments = Object.values(session.segments).sort((left, right) => left.startIdx - right.startIdx)
-  const lines: string[] = []
-  let successCount = 0
-  let failedCount = 0
-
-  for (const segment of orderedSegments) {
-    const summary = segment.summary
-    const summaryText = summary?.content?.summary
-
-    if (summary?.status === 'done' && summary?.error == null && typeof summaryText === 'string' && summaryText.trim().length > 0) {
-      lines.push(summaryText.trim())
-      successCount++
-      continue
-    }
-
-    failedCount++
-    if (typeof segment.firstFrom === 'number') {
-      lines.push(`${getTimeDisplay(segment.firstFrom)} 未总结`)
-    } else {
-      lines.push('未总结')
-    }
-  }
-
+  const videoSummary = session.videoSummary?.summary
   const publishedAt = session.videoMeta.ctime != null
     ? dayjs(session.videoMeta.ctime * 1000).format('YYYY-MM-DD HH:mm:ss')
     : ''
 
   return {
-    markdown: lines.join('\n').trim(),
+    markdown: videoSummary != null && !isSummaryEmpty(videoSummary) ? getSummaryStr(videoSummary).trim() : '',
     publishedAt,
     stats: {
-      total: orderedSegments.length,
-      success: successCount,
-      failed: failedCount,
+      total: 1,
+      success: videoSummary != null && !isSummaryEmpty(videoSummary) ? 1 : 0,
+      failed: videoSummary != null && !isSummaryEmpty(videoSummary) ? 0 : 1,
     },
   }
 }
@@ -170,12 +148,11 @@ export const ensureSummaryEmailSent = async (sessionKey: string) => {
     return
   }
 
-  const orderedSegments = Object.values(session.segments)
-  if (orderedSegments.length === 0) {
+  if (session.videoSummary == null) {
     return
   }
 
-  const allSummaryDone = orderedSegments.every((segment) => segment.summary?.status === 'done')
+  const allSummaryDone = session.videoSummary.summary != null && session.videoSummary.summary.status === 'done'
   if (!allSummaryDone) {
     return
   }

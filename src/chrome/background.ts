@@ -4,7 +4,7 @@ import { DEFAULT_USE_PORT, STORAGE_ENV} from '@/consts/const'
 import { AllExtensionMessages } from '@/message-typings'
 import { ExtensionMessaging, TAG_TARGET_INJECT } from '../message'
 import {discoverModels} from './openaiService'
-import {cleanupSummarySessions, getSummarySession, markSummarySegmentPending, upsertSummarySession} from './summarySessionService'
+import {cleanupSummarySessions, getSummarySession, markVideoSummaryPending, upsertSummarySession} from './summarySessionService'
 import {retrySummaryEmailFromAlarm} from './summaryEmailService'
 
 const setBadgeOk = async (tabId: number, ok: boolean) => {
@@ -78,13 +78,10 @@ const methods: {
   ADD_TASK: async (params, context) => {
     const summarySessionKey = params.taskDef.extra?.summarySessionKey as string | undefined
     const summaryRunStartedAt = params.taskDef.extra?.summaryRunStartedAt as number | undefined
-    const summarySegmentStartIdx = params.taskDef.extra?.startIdx as number | undefined
-    if (typeof summarySessionKey === 'string' && summarySessionKey.length > 0 &&
-      typeof summaryRunStartedAt === 'number' && typeof summarySegmentStartIdx === 'number') {
-      await markSummarySegmentPending({
+    if (typeof summarySessionKey === 'string' && summarySessionKey.length > 0 && typeof summaryRunStartedAt === 'number') {
+      await markVideoSummaryPending({
         sessionKey: summarySessionKey,
         runStartedAt: summaryRunStartedAt,
-        segmentStartIdx: summarySegmentStartIdx,
       })
     }
 

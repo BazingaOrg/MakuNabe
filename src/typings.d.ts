@@ -72,7 +72,6 @@ interface SummarySessionSegmentSnapshot {
   text: string
   firstFrom?: number
   lastTo?: number
-  summary?: Summary
   updatedAt: number
 }
 
@@ -89,9 +88,16 @@ interface SummarySession {
   updatedAt: number
   runStartedAt?: number
   videoMeta: SummarySessionVideoMeta
+  fullText?: string
   segmentCount: number
   email?: SummarySessionEmailState
+  videoSummary?: SummarySessionVideoSummarySnapshot
   segments: Record<string, SummarySessionSegmentSnapshot>
+}
+
+interface SummarySessionVideoSummarySnapshot {
+  summary?: Summary
+  updatedAt: number
 }
 
 interface SummarySessionEmailState {
@@ -114,6 +120,7 @@ interface SummarySessionSyncSegmentInput {
 interface SummarySessionSyncInput {
   sessionKey: string
   videoMeta: SummarySessionVideoMeta
+  fullText?: string
   segments: SummarySessionSyncSegmentInput[]
 }
 
@@ -144,9 +151,6 @@ interface Segment {
   text: string
   fold?: boolean
   chapterTitle?: string // 章节标题
-  summaries: {
-    [type: string]: Summary
-  }
 }
 
 interface Summary {

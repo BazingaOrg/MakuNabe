@@ -10,10 +10,10 @@ const ApiKeyReminder: React.FC = () => {
   }
 
   return (
-    <div className="flex items-center justify-between p-2 border border-warning/40 bg-warning/15 text-base-content text-sm rounded-md">
+    <div className="bili-panel-soft flex items-center justify-between gap-3 p-3 text-base-content text-sm rounded-lg">
       <span>请先设置 API 密钥以使用总结及翻译功能</span>
       <button
-        className="btn btn-xs btn-outline border-warning/50 hover:bg-warning/20 text-base-content"
+        className="btn btn-xs btn-outline rounded-full border-warning/50 hover:bg-warning/20 text-base-content"
         onClick={openOptionsPage}
       >
         设置 {'->'}

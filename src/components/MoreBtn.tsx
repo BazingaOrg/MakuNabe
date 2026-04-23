@@ -54,6 +54,9 @@ const DownloadTypes = [
   },
 ]
 
+const menuIconClassName = 'bili-menu-icon'
+const menuRowClassName = 'bili-menu-row'
+
 const MoreBtn = (props: Props) => {
   const {placement} = props
   const dispatch = useAppDispatch()
@@ -66,6 +69,7 @@ const MoreBtn = (props: Props) => {
   const [moreVisible, setMoreVisible] = useState(false)
   const eventBus = useContext(EventBusContext)
   const segments = useAppSelector(state => state.env.segments)
+  const videoSummary = useAppSelector(state => state.env.videoSummary)
   const url = useAppSelector(state => state.env.url)
   const title = useAppSelector(state => state.env.title)
   const ctime = useAppSelector(state => state.env.ctime) // 时间戳，单位s
@@ -145,7 +149,9 @@ const MoreBtn = (props: Props) => {
       suffix = 'json'
     } else if (downloadType === 'summarize') {
       s = `${title??'无标题'}\n${url??'无链接'}\n${author??'无作者'} ${time}\n\n`
-      const [success, content] = getSummarize(title, segments)
+      const [success, content] = getSummarize({
+        videoSummary,
+      })
       if (!success) return
       s += content
       fileName += ' - 总结'
@@ -161,7 +167,7 @@ const MoreBtn = (props: Props) => {
       }).catch(console.error)
     }
     setMoreVisible(false)
-  }, [author, ctime, data, downloadType, segments, title, url])
+  }, [author, ctime, data, downloadType, title, url, videoSummary])
 
   const downloadAudioCallback = useCallback(() => {
     sendInject(null, 'DOWNLOAD_AUDIO', {}).catch(error => {
@@ -200,67 +206,63 @@ const MoreBtn = (props: Props) => {
   }, moreRef)
 
   return <>
-  <div ref={moreRef} onClick={moreCallback}>
-    <div className='indicator flex items-center'>
+  <div ref={moreRef}>
+    <button aria-label='更多操作' className='bili-toolbar-button indicator flex items-center' onClick={moreCallback}>
       {envReady && envData.flagDot !== true && <span className="indicator-item bg-secondary w-1.5 h-1.5 rounded-full"></span>}
-      <FiMoreVertical className='desc transform ease-in duration-300 hover:text-primary' title='更多'/>
-    </div>
+      <FiMoreVertical className='desc transition-colors duration-200 ease-out hover:text-primary' title='更多'/>
+    </button>
   </div>
   {moreVisible &&
-    <Popover refElement={moreRef.current} className='bg-base-100 text-base-content py-1 z-[1000] border border-base-300 rounded-md shadow-md' options={{
+    <Popover refElement={moreRef.current} className='bili-popover text-base-content z-[1000] min-w-[220px]' options={{
       placement
     }}>
-      <ul className='menu menu-compact'>
-        <li className='hover:bg-base-200'>
-          <a className='flex items-center' onClick={(e) => {
+      <div className='flex flex-col gap-1'>
+        <div className={menuRowClassName}>
+          <button className='flex min-w-0 flex-1 items-center gap-3 text-left' onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
             downloadCallback(false)
           }}>
-            <RiFileCopy2Line className='w-[20px] h-[20px] text-primary rounded-sm p-0.5 bg-primary/10'/>
-            复制
-            <select className='select select-ghost select-xs' value={downloadType} onChange={selectCallback}
+            <span className={menuIconClassName}><RiFileCopy2Line className='h-4 w-4'/></span>
+            <span className='flex-1'>复制</span>
+          </button>
+            <select className='select select-ghost select-xs h-8 min-h-0 rounded-full border border-base-300 bg-base-100 pr-7' value={downloadType} onChange={selectCallback}
                     onClick={preventCallback}>
               {DownloadTypes?.map((item: any) => <option key={item.type} value={item.type}>{item.name}</option>)}
             </select>
-          </a>
-        </li>
-        <li className='hover:bg-base-200'>
-          <a className='flex items-center' onClick={(e) => {
+        </div>
+        <div className={menuRowClassName}>
+          <button className='flex min-w-0 flex-1 items-center gap-3 text-left' onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
             downloadCallback(true)
           }}>
-            <ImDownload3 className='w-[20px] h-[20px] text-primary rounded-sm p-0.5 bg-primary/10'/>
-            下载
-            <select className='select select-ghost select-xs' value={downloadType} onChange={selectCallback}
+            <span className={menuIconClassName}><ImDownload3 className='h-4 w-4'/></span>
+            <span className='flex-1'>下载</span>
+          </button>
+            <select className='select select-ghost select-xs h-8 min-h-0 rounded-full border border-base-300 bg-base-100 pr-7' value={downloadType} onChange={selectCallback}
                     onClick={preventCallback}>
               {DownloadTypes?.map((item: any) => <option key={item.type} value={item.type}>{item.name}</option>)}
             </select>
-          </a>
-        </li>
-        <li className='hover:bg-base-200'>
-          <a className='flex items-center' onClick={(e) => {
+        </div>
+        <button className={menuRowClassName} onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
             downloadAudioCallback()
           }}>
-            <ImDownload3 className='w-[20px] h-[20px] text-primary rounded-sm p-0.5 bg-primary/10'/>
-            下载音频(m4s)
-          </a>
-        </li>
-        <li className='hover:bg-base-200'>
-          <a className='flex items-center' onClick={(e) => {
+            <span className={menuIconClassName}><ImDownload3 className='h-4 w-4'/></span>
+            <span className='flex-1'>下载音频 (m4s)</span>
+        </button>
+        <button className={menuRowClassName} onClick={(e) => {
             chrome.runtime.openOptionsPage()
             setMoreVisible(false)
             e.preventDefault()
             e.stopPropagation()
           }}>
-            <IoMdSettings className='w-[20px] h-[20px] text-primary rounded-sm p-0.5 bg-primary/10'/>
-            选项
-          </a>
-        </li>
-      </ul>
+            <span className={menuIconClassName}><IoMdSettings className='h-4 w-4'/></span>
+            <span className='flex-1'>选项</span>
+        </button>
+      </div>
     </Popover>}
   </>
 }

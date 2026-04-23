@@ -1,5 +1,4 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit'
-import {find} from 'lodash-es'
 import {DEFAULT_SERVER_URL_OPENAI, SUMMARY_STRATEGY_DEFAULT, TOTAL_HEIGHT_DEF} from '../consts/const'
 
 interface EnvState {
@@ -29,6 +28,7 @@ interface EnvState {
   data?: Transcript
   uploadedTranscript?: Transcript
   segments?: Segment[]
+  videoSummary?: Summary
   url?: string
   title?: string
   ctime?: number | null
@@ -107,6 +107,9 @@ export const slice = createSlice({
     setTaskIds: (state, action: PayloadAction<string[]>) => {
       state.taskIds = action.payload
     },
+    setVideoSummaryState: (state, action: PayloadAction<Summary | undefined>) => {
+      state.videoSummary = action.payload
+    },
     setLastSummarizeTime: (state, action: PayloadAction<number>) => {
       state.lastSummarizeTime = action.payload
     },
@@ -116,87 +119,23 @@ export const slice = createSlice({
     delTaskId: (state, action: PayloadAction<string>) => {
       state.taskIds = state.taskIds?.filter(id => id !== action.payload)
     },
-    setSummaryContent: (state, action: PayloadAction<{
-      segmentStartIdx: number
-      type: SummaryType
-      content?: any
-    }>) => {
-      const segment = find(state.segments, {startIdx: action.payload.segmentStartIdx})
-      if (segment != null) {
-        let summary = segment.summaries[action.payload.type] as Summary | undefined
-        if (summary == null) {
-          summary = {
-            type: action.payload.type,
-            status: 'done',
-            content: action.payload.content,
-          }
-          segment.summaries[action.payload.type] = summary
-        } else {
-          summary.content = action.payload.content
-        }
-      }
-    },
-    setSummaryStatus: (state, action: PayloadAction<{
-      segmentStartIdx: number
-      type: SummaryType
-      status: SummaryStatus
-    }>) => {
-      const segment = find(state.segments, {startIdx: action.payload.segmentStartIdx})
-      if (segment != null) {
-        let summary = segment.summaries[action.payload.type] as Summary | undefined
-        if (summary != null) {
-          summary.status = action.payload.status
-        } else {
-          summary = {
-            type: action.payload.type,
-            status: action.payload.status,
-          }
-          segment.summaries[action.payload.type] = summary
-        }
-      }
-    },
-    setSummaryError: (state, action: PayloadAction<{
-      segmentStartIdx: number
-      type: SummaryType
-      error?: string
-    }>) => {
-      const segment = find(state.segments, {startIdx: action.payload.segmentStartIdx})
-      if (segment != null) {
-        let summary = segment.summaries[action.payload.type] as Summary | undefined
-        if (summary != null) {
-          summary.error = action.payload.error
-        } else {
-          summary = {
-            type: action.payload.type,
-            status: 'done',
-            error: action.payload.error,
-          }
-          segment.summaries[action.payload.type] = summary
-        }
-      }
-    },
     syncSummarySessionState: (state, action: PayloadAction<{
       session?: SummarySession
     }>) => {
       const session = action.payload.session
       if (session == null) {
+        state.videoSummary = undefined
         return
       }
 
       state.lastSummarizeTime = session.runStartedAt
-
-      for (const segment of state.segments ?? []) {
-        const snapshot = session.segments[String(segment.startIdx)]
-        if (snapshot?.summary != null) {
-          segment.summaries.brief = snapshot.summary
-        }
-      }
+      state.videoSummary = session.videoSummary?.summary
     },
     setSegmentFold: (state, action: PayloadAction<{
       segmentStartIdx: number
       fold: boolean
     }>) => {
-      const segment = find(state.segments, {startIdx: action.payload.segmentStartIdx})
+      const segment = state.segments?.find((item) => item.startIdx === action.payload.segmentStartIdx)
       if (segment != null) {
         segment.fold = action.payload.fold
       }
@@ -251,6 +190,7 @@ export const slice = createSlice({
     },
     setSegments: (state, action: PayloadAction<Segment[] | undefined>) => {
       state.segments = action.payload
+      state.videoSummary = undefined
     },
     setFold: (state, action: PayloadAction<boolean>) => {
       state.fold = action.payload
@@ -273,12 +213,10 @@ export const {
   setFloatKeyPointsSegIdx,
   setFoldAll,
   setSegmentFold,
-  setSummaryContent,
-  setSummaryStatus,
-  setSummaryError,
   syncSummarySessionState,
   setTitle,
   setSegments,
+  setVideoSummaryState,
   setLastSummarizeTime,
   addTaskId,
   delTaskId,

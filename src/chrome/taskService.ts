@@ -1,6 +1,6 @@
 import {TASK_EXPIRE_TIME} from '../consts/const'
 import {handleChatCompleteTask, repairSummaryJson} from './openaiService'
-import {finalizeSummarySegment, parseSummaryContentStrict, updateSummarySegmentStage} from './summarySessionService'
+import {finalizeVideoSummary, parseSummaryContentStrict, updateVideoSummaryStage} from './summarySessionService'
 import {ensureSummaryEmailSent} from './summaryEmailService'
 
 export const tasksMap = new Map<string, Task>()
@@ -21,11 +21,9 @@ const tryRepairSummaryTaskContent = async (task: Task) => {
   }
 
   const summarySessionKey = task.def.extra?.summarySessionKey as string | undefined
-  const summarySegmentStartIdx = task.def.extra?.startIdx as number | undefined
-  if (typeof summarySessionKey === 'string' && summarySessionKey.length > 0 && typeof summarySegmentStartIdx === 'number') {
-    await updateSummarySegmentStage({
+  if (typeof summarySessionKey === 'string' && summarySessionKey.length > 0) {
+    await updateVideoSummaryStage({
       sessionKey: summarySessionKey,
-      segmentStartIdx: summarySegmentStartIdx,
       recoveryStage: 'repairing',
       clearStreamingContent: false,
     })
@@ -55,11 +53,9 @@ const rerunChatCompleteTask = async (task: Task) => {
   }
 
   const summarySessionKey = task.def.extra?.summarySessionKey as string | undefined
-  const summarySegmentStartIdx = task.def.extra?.startIdx as number | undefined
-  if (typeof summarySessionKey === 'string' && summarySessionKey.length > 0 && typeof summarySegmentStartIdx === 'number') {
-    await updateSummarySegmentStage({
+  if (typeof summarySessionKey === 'string' && summarySessionKey.length > 0) {
+    await updateVideoSummaryStage({
       sessionKey: summarySessionKey,
-      segmentStartIdx: summarySegmentStartIdx,
       recoveryStage: 'retrying',
       clearStreamingContent: true,
     })
@@ -125,12 +121,10 @@ export const handleTask = async (task: Task) => {
   task.endTime = Date.now()
 
   const summarySessionKey = task.def.extra?.summarySessionKey as string | undefined
-  const summarySegmentStartIdx = task.def.extra?.startIdx as number | undefined
-  if (typeof summarySessionKey === 'string' && summarySessionKey.length > 0 && typeof summarySegmentStartIdx === 'number') {
+  if (typeof summarySessionKey === 'string' && summarySessionKey.length > 0) {
     const content = task.resp?.choices?.[0]?.message?.content?.trim()
-    finalizeSummarySegment({
+    finalizeVideoSummary({
       sessionKey: summarySessionKey,
-      segmentStartIdx: summarySegmentStartIdx,
       content,
       taskError: task.error,
     }).then(async () => {

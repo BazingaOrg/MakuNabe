@@ -6,8 +6,15 @@ export const debug = (...args: any[]) => {
   console.debug('[APP]', ...args)
 }
 
+/**
+ * Preserve subtitle line boundaries so full-video summaries keep the original
+ * pacing instead of collapsing everything into a single comma-separated block.
+ */
 export const getWholeText = (items: string[]) => {
-  return items.join(',').replaceAll('\n', ' ')
+  return items
+    .map((item) => item.replaceAll('\n', ' ').trim())
+    .filter((item) => item.length > 0)
+    .join('\n')
 }
 
 export const getLastTime = (seconds: number) => {
@@ -210,8 +217,10 @@ export const setTheme = (theme: EnvData['theme']) => {
   }
 }
 
-export const getSummarize = (title: string | undefined, segments: Segment[] | undefined): [boolean, string] => {
-  const result = buildSummaryOverview(segments)
+export const getSummarize = (params: {
+  videoSummary?: Summary
+}): [boolean, string] => {
+  const result = buildSummaryOverview(params)
   const content = result.content
   const success = result.success
 
@@ -222,7 +231,9 @@ export const getSummarize = (title: string | undefined, segments: Segment[] | un
   return [success, content]
 }
 
-export const buildSummaryOverview = (segments: Segment[] | undefined): {
+export const buildSummaryOverview = (params: {
+  videoSummary?: Summary
+}): {
   success: boolean
   content: string
   total: number
@@ -230,50 +241,34 @@ export const buildSummaryOverview = (segments: Segment[] | undefined): {
   failedCount: number
   summaryBody: string
 } => {
-  if (segments == null) {
-    return {
-      success: false,
-      content: '',
-      total: 0,
-      successCount: 0,
-      failedCount: 0,
-      summaryBody: '',
-    }
-  }
+  const {videoSummary} = params
 
-  let summaryBody = ''
-  let success = false
-  let successCount = 0
-  let failedCount = 0
-  for (const segment of segments) {
-    const summary = segment.summaries.brief
-    if (summary != null && !isSummaryEmpty(summary)) {
-      success = true
-      successCount++
-      summaryBody += getSummaryStr(summary)
-    } else {
-      failedCount++
-      if (segment.items.length > 0) {
-        summaryBody += `${getTimeDisplay(segment.items[0].from)} `
-      }
-      summaryBody += '未总结\n'
+  if (videoSummary != null && !isSummaryEmpty(videoSummary)) {
+    const summaryBody = getSummaryStr(videoSummary).trim()
+    const content = `${SUMMARIZE_TYPES.brief.downloadName}\n\n${summaryBody}\n--- MakuNabe (Bazinga Fork)`
+
+    return {
+      success: true,
+      content,
+      total: 1,
+      successCount: 1,
+      failedCount: 0,
+      summaryBody,
     }
   }
-  let content = `${SUMMARIZE_TYPES.brief.downloadName}\n\n${summaryBody}`
-  content += '\n--- MakuNabe (Bazinga Fork)'
 
   return {
-    success,
-    content,
-    total: segments.length,
-    successCount,
-    failedCount,
-    summaryBody,
+    success: false,
+    content: '',
+    total: 0,
+    successCount: 0,
+    failedCount: 0,
+    summaryBody: '',
   }
 }
 
 export const buildSummaryEmailMarkdown = (params: {
-  segments?: Segment[]
+  videoSummary?: Summary
 }): {
   success: boolean
   markdown: string
@@ -283,8 +278,10 @@ export const buildSummaryEmailMarkdown = (params: {
     failed: number
   }
 } => {
-  const { segments } = params
-  const summary = buildSummaryOverview(segments)
+  const { videoSummary } = params
+  const summary = buildSummaryOverview({
+    videoSummary,
+  })
   const markdown = summary.summaryBody.trim()
 
   return {
@@ -324,9 +321,10 @@ export const buildSummarySessionSyncInput = (params: {
   title?: string
   ctime?: number | null
   author?: string
+  fullText?: string
   segments?: Segment[]
 }): SummarySessionSyncInput => {
-  const {sessionKey, url, title, ctime, author, segments} = params
+  const {sessionKey, url, title, ctime, author, fullText, segments} = params
 
   return {
     sessionKey,
@@ -336,6 +334,7 @@ export const buildSummarySessionSyncInput = (params: {
       ctime,
       author,
     },
+    fullText,
     segments: (segments ?? []).map((segment) => ({
       startIdx: segment.startIdx,
       endIdx: segment.endIdx,

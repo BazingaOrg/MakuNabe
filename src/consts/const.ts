@@ -56,7 +56,7 @@ export const PROMPT_DEFAULTS = {
 {{title}}
 
 视频字幕全文：
-{{segment}}`,
+{{transcript}}`,
 }
 
 export const SUMMARY_REPAIR_PROMPT = `You will receive a model output that should represent a JSON object with a single field named "summary".
@@ -81,7 +81,7 @@ export const PAGE_SETTINGS = 'settings'
 export const TOTAL_HEIGHT_MIN = 400
 export const TOTAL_HEIGHT_DEF = 520
 export const TOTAL_HEIGHT_MAX = 800
-export const HEADER_HEIGHT = 44
+export const HEADER_HEIGHT = 48
 export const TITLE_HEIGHT = 24
 export const SEARCH_BAR_HEIGHT = 32
 export const RECOMMEND_HEIGHT = 36

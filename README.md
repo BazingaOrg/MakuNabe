@@ -169,7 +169,7 @@ Field notes:
 
 The extension does not send email directly.
 
-It sends a JSON `POST` request to `emailWebhookUrl` after all segment summaries finish. Your webhook can forward that payload to Resend, MailChannels, SendGrid, or any other provider.
+It sends a JSON `POST` request to `emailWebhookUrl` after the full-video summary finishes. Your webhook can forward that payload to Resend, MailChannels, SendGrid, or any other provider.
 
 Payload shape:
 
@@ -420,7 +420,7 @@ Use this checklist after setup:
 
 7. Click `点击生成`.
 
-8. Wait for all segment summaries to finish.
+8. Wait for the full-video summary to finish.
 
 9. If `emailAutoSendEnabled` is on, the extension sends the final merged markdown to your Worker only after the summary is fully completed.
 

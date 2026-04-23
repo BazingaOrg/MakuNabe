@@ -26,14 +26,14 @@ const RateExtension: React.FC = () => {
   if (reviewed === true || reviewed === undefined) return null
 
   return (
-    <div className="relative m-2 p-3 rounded-md border border-base-300 bg-base-100 text-base-content text-sm shadow-sm">
+    <div className="relative bili-panel-soft m-1.5 p-4 rounded-lg text-base-content text-sm">
       <button
         onClick={() => {
           dispatch(setTempData({
             reviewed: true
           }))
         }}
-        className="absolute top-2 right-2 text-base-content/50 hover:text-base-content transition-colors"
+        className="absolute top-2 right-2 bili-toolbar-button"
       >
         <IoMdClose size={18} />
       </button>

@@ -39,7 +39,7 @@ function App() {
   useTranslateService()
 
   return <div className={classNames(
-    'select-none w-full subtitle-shell bili-surface shadow-sm'
+    'select-none w-full subtitle-shell bili-panel'
   )} style={{
     height: fold?undefined:`${totalHeight}px`,
   }}>

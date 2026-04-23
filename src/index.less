@@ -11,6 +11,10 @@
   --bili-surface: #ffffff;
   --bili-surface-soft: #f6f7f8;
   --bili-border: #e3e5e7;
+  --bili-header-bg: #f1f2f3;
+  --bili-hover-bg: rgba(24, 25, 28, 0.05);
+  --bili-primary-soft: rgba(251, 114, 153, 0.12);
+  --bili-panel-shadow: 0 8px 24px rgba(24, 25, 28, 0.06), 0 2px 6px rgba(24, 25, 28, 0.04);
 }
 
 [data-theme='dark'] {
@@ -18,6 +22,10 @@
   --bili-surface: #171a21;
   --bili-surface-soft: #11141b;
   --bili-border: #2a2f3a;
+  --bili-header-bg: #14171d;
+  --bili-hover-bg: rgba(255, 255, 255, 0.05);
+  --bili-primary-soft: rgba(251, 114, 153, 0.16);
+  --bili-panel-shadow: 0 12px 28px rgba(0, 0, 0, 0.32);
 }
 
 html,
@@ -26,6 +34,8 @@ body {
   padding: 0;
   font-size: 100%;
   background: var(--bili-page-bg, transparent);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #makunabe {
@@ -56,8 +66,97 @@ body {
   border: 1px solid var(--bili-border);
 }
 
+.bili-panel {
+  background: var(--bili-surface);
+  box-shadow: var(--bili-panel-shadow);
+}
+
+.bili-panel-soft {
+  background: var(--bili-surface-soft);
+  border: 1px solid var(--bili-border);
+}
+
 .bili-chip {
   @apply bg-base-200 border border-base-300 text-base-content/80 rounded-md;
+}
+
+.bili-toolbar-button {
+  @apply inline-flex items-center justify-center rounded-md border border-transparent text-base-content/70 transition-colors duration-200 ease-out;
+  touch-action: manipulation;
+  min-height: 32px;
+  min-width: 32px;
+}
+
+.bili-toolbar-button:hover {
+  background: var(--bili-hover-bg);
+}
+
+.bili-toolbar-button:active {
+  transform: scale(0.96);
+}
+
+.bili-toolbar-button-primary {
+  background: var(--bili-primary-soft);
+  color: theme('colors.primary');
+}
+
+.bili-segment-switch {
+  @apply inline-flex items-center rounded-full p-1;
+  background: var(--bili-surface-soft);
+  border: 1px solid var(--bili-border);
+}
+
+.bili-segment-switch-item {
+  @apply rounded-full px-3 py-1 text-xs font-medium text-base-content/70 transition-colors duration-200 ease-out;
+}
+
+.bili-segment-switch-item-active {
+  @apply text-primary;
+  background: var(--bili-primary-soft);
+}
+
+.bili-section-label {
+  @apply inline-flex items-center rounded-full py-1 text-xs font-semibold text-base-content/75;
+  background: var(--bili-surface-soft);
+  border: 1px solid var(--bili-border);
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.bili-field {
+  @apply rounded-lg px-3 py-3;
+  background: var(--bili-surface-soft);
+  border: 1px solid var(--bili-border);
+}
+
+.bili-popover {
+  @apply rounded-xl p-2;
+  background: var(--bili-surface);
+  border: 1px solid var(--bili-border);
+  box-shadow: var(--bili-panel-shadow);
+}
+
+.bili-menu-row {
+  @apply flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-base-content transition-colors duration-200 ease-out;
+}
+
+.bili-menu-row:hover {
+  background: var(--bili-hover-bg);
+}
+
+.bili-menu-icon {
+  @apply inline-flex h-7 w-7 items-center justify-center rounded-md text-primary;
+  background: var(--bili-primary-soft);
+}
+
+.bili-current-segment {
+  background: var(--bili-surface);
+  border-color: rgba(251, 114, 153, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(251, 114, 153, 0.08);
+}
+
+.bili-current-line {
+  background: var(--bili-primary-soft);
 }
 
 /**

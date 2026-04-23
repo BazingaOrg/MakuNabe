@@ -149,17 +149,13 @@ export const upsertSummarySession = async (input: SummarySessionSyncInput): Prom
   const nextSegments: SummarySession['segments'] = {}
 
   for (const segment of input.segments) {
-    const segmentKey = String(segment.startIdx)
-    const existingSegment = existingSession?.segments?.[segmentKey]
-
-    nextSegments[segmentKey] = {
+    nextSegments[String(segment.startIdx)] = {
       startIdx: segment.startIdx,
       endIdx: segment.endIdx,
       text: segment.text,
       firstFrom: segment.firstFrom,
       lastTo: segment.lastTo,
-      summary: existingSegment?.summary,
-      updatedAt: existingSegment?.updatedAt ?? now,
+      updatedAt: now,
     }
   }
 
@@ -169,10 +165,12 @@ export const upsertSummarySession = async (input: SummarySessionSyncInput): Prom
     updatedAt: now,
     runStartedAt: existingSession?.runStartedAt,
     email: existingSession?.email,
+    videoSummary: existingSession?.videoSummary,
     videoMeta: {
       ...existingSession?.videoMeta,
       ...input.videoMeta,
     },
+    fullText: input.fullText,
     segmentCount: input.segments.length,
     segments: nextSegments,
   }
@@ -186,9 +184,8 @@ export const getSummarySession = async (sessionKey: string) => {
   return await loadSummarySession(sessionKey)
 }
 
-export const markSummarySegmentPending = async (params: {
+export const markVideoSummaryPending = async (params: {
   sessionKey: string
-  segmentStartIdx: number
   runStartedAt: number
   recoveryStage?: SummaryRecoveryStage
 }) => {
@@ -197,17 +194,10 @@ export const markSummarySegmentPending = async (params: {
     throw new Error(`Summary session not found: ${params.sessionKey}`)
   }
 
-  const segmentKey = String(params.segmentStartIdx)
-  const existingSegment = session.segments[segmentKey]
-  if (existingSegment == null) {
-    throw new Error(`Summary segment not found: ${params.segmentStartIdx}`)
-  }
-
   const now = Date.now()
   session.runStartedAt = params.runStartedAt
   session.updatedAt = now
-  session.segments[segmentKey] = {
-    ...existingSegment,
+  session.videoSummary = {
     summary: {
       type: 'brief',
       status: 'pending',
@@ -220,9 +210,8 @@ export const markSummarySegmentPending = async (params: {
   await saveSummarySession(session)
 }
 
-export const updateSummarySegmentStage = async (params: {
+export const updateVideoSummaryStage = async (params: {
   sessionKey: string
-  segmentStartIdx: number
   recoveryStage: SummaryRecoveryStage
   clearStreamingContent?: boolean
 }) => {
@@ -231,21 +220,14 @@ export const updateSummarySegmentStage = async (params: {
     throw new Error(`Summary session not found: ${params.sessionKey}`)
   }
 
-  const segmentKey = String(params.segmentStartIdx)
-  const existingSegment = session.segments[segmentKey]
-  if (existingSegment == null) {
-    throw new Error(`Summary segment not found: ${params.segmentStartIdx}`)
-  }
-
   const now = Date.now()
   session.updatedAt = now
-  session.segments[segmentKey] = {
-    ...existingSegment,
+  session.videoSummary = {
     summary: {
       type: 'brief',
       status: 'pending',
       recoveryStage: params.recoveryStage,
-      streamingContent: params.clearStreamingContent === true ? '' : (existingSegment.summary?.streamingContent ?? ''),
+      streamingContent: params.clearStreamingContent === true ? '' : (session.videoSummary?.summary?.streamingContent ?? ''),
     },
     updatedAt: now,
   }
@@ -253,13 +235,12 @@ export const updateSummarySegmentStage = async (params: {
   await saveSummarySession(session)
 }
 
-export const updateSummarySegmentStreaming = async (params: {
+export const updateVideoSummaryStreaming = async (params: {
   sessionKey: string
-  segmentStartIdx: number
   streamingContent: string
   force?: boolean
 }) => {
-  const streamKey = `${params.sessionKey}:${params.segmentStartIdx}`
+  const streamKey = `${params.sessionKey}:video`
   const state = streamPersistState.get(streamKey)
   const now = Date.now()
   if (params.force !== true && state != null) {
@@ -276,20 +257,13 @@ export const updateSummarySegmentStreaming = async (params: {
     throw new Error(`Summary session not found: ${params.sessionKey}`)
   }
 
-  const segmentKey = String(params.segmentStartIdx)
-  const existingSegment = session.segments[segmentKey]
-  if (existingSegment == null) {
-    throw new Error(`Summary segment not found: ${params.segmentStartIdx}`)
-  }
-
   session.updatedAt = now
-  session.segments[segmentKey] = {
-    ...existingSegment,
+  session.videoSummary = {
     summary: {
       type: 'brief',
       status: 'pending',
       streamingContent: params.streamingContent,
-      recoveryStage: existingSegment.summary?.recoveryStage ?? 'generating',
+      recoveryStage: session.videoSummary?.summary?.recoveryStage ?? 'generating',
     },
     updatedAt: now,
   }
@@ -301,21 +275,14 @@ export const updateSummarySegmentStreaming = async (params: {
   })
 }
 
-export const finalizeSummarySegment = async (params: {
+export const finalizeVideoSummary = async (params: {
   sessionKey: string
-  segmentStartIdx: number
   content?: string
   taskError?: string
 }) => {
   const session = await loadSummarySession(params.sessionKey)
   if (session == null) {
     throw new Error(`Summary session not found: ${params.sessionKey}`)
-  }
-
-  const segmentKey = String(params.segmentStartIdx)
-  const existingSegment = session.segments[segmentKey]
-  if (existingSegment == null) {
-    throw new Error(`Summary segment not found: ${params.segmentStartIdx}`)
   }
 
   const now = Date.now()
@@ -329,8 +296,7 @@ export const finalizeSummarySegment = async (params: {
   }
 
   session.updatedAt = now
-  session.segments[segmentKey] = {
-    ...existingSegment,
+  session.videoSummary = {
     summary: {
       type: 'brief',
       status: 'done',
@@ -343,5 +309,5 @@ export const finalizeSummarySegment = async (params: {
   }
 
   await saveSummarySession(session)
-  streamPersistState.delete(`${params.sessionKey}:${params.segmentStartIdx}`)
+  streamPersistState.delete(`${params.sessionKey}:video`)
 }

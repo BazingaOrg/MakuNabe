@@ -28,15 +28,19 @@ const OptionCard = ({ title, children, defaultExpanded = true }: { title: React.
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
 
   return (
-    <div className="card bg-base-100 border border-base-300 shadow-sm mb-4">
-      <div className="card-body p-4">
-        <h2 className="card-title flex justify-between cursor-pointer text-base-content" onClick={() => setIsExpanded(!isExpanded)}>
-          {title}
+    <section className="bili-panel rounded-2xl mb-4 overflow-hidden">
+      <button
+        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="text-[15px] font-semibold tracking-[-0.012em] text-base-content">{title}</div>
+        <span className="bili-toolbar-button" aria-hidden>
           {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
-        </h2>
-        {isExpanded && <div className="mt-4">{children}</div>}
-      </div>
-    </div>
+        </span>
+      </button>
+      <div className="border-t border-base-300/80" />
+      {isExpanded && <div className="px-5 py-4">{children}</div>}
+    </section>
   )
 }
 
@@ -48,11 +52,11 @@ const FormItem = (props: {
   const {title, tip, htmlFor, children} = props
   const hasTip = typeof tip === 'string' && tip.length > 0
   return (
-    <div className='flex items-center gap-4 mb-2'>
-      <div className={classNames('w-1/3 text-right', hasTip && 'tooltip tooltip-right z-50')} data-tip={tip}>
+    <div className='bili-field flex items-start gap-4 mb-3'>
+      <div className={classNames('w-[140px] shrink-0 pt-2 text-sm', hasTip && 'tooltip tooltip-right z-50')} data-tip={tip}>
         <label className={classNames('font-medium text-base-content/90', hasTip && 'border-b border-dotted border-current pb-[2px]')} htmlFor={htmlFor}>{title}</label>
       </div>
-      <div className='w-2/3'>
+      <div className='flex-1 min-w-0'>
         {children}
       </div>
     </div>
@@ -338,7 +342,11 @@ const OptionsPage = () => {
   }, [])
 
   return (
-    <div className='container mx-auto max-w-3xl p-4 bg-base-200 min-h-screen'>
+    <div className='container mx-auto max-w-4xl p-4 md:p-6 bg-base-200 min-h-screen'>
+      <div className='mb-5 rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/10 via-base-100 to-secondary/10 px-5 py-4'>
+        <div className='text-lg font-semibold tracking-[-0.012em] text-base-content'>MakuNabe 设置</div>
+        <div className='mt-1 text-sm desc'>面向 Bilibili 视频页的字幕辅助扩展配置。优先保证信息密度、清晰层级和轻量交互。</div>
+      </div>
       <OptionCard title="通用配置">
         <FormItem title='侧边栏' htmlFor='sidePanel' tip='字幕列表是否显示在侧边栏'>
           <input id='sidePanel' type='checkbox' className='toggle toggle-primary' checked={sidePanelValue}
@@ -352,21 +360,21 @@ const OptionsPage = () => {
           <input id='autoExpand' type='checkbox' className='toggle toggle-primary' checked={autoExpandValue}
                  onChange={setAutoExpandValue}/>
         </FormItem>}
-        <FormItem title='章节模式' htmlFor='chapterMode' tip='如果视频包含章节，则会按章节分割(会导致总结只能按章节来)'>
+        <FormItem title='章节模式' htmlFor='chapterMode' tip='如果视频包含章节，则会按章节分割字幕列表，但总结始终基于全文生成'>
           <input id='chapterMode' type='checkbox' className='toggle toggle-primary' checked={chapterModeValue}
                  onChange={setChapterModeValue}/>
         </FormItem>
         <FormItem title='主题'>
-          <div className="btn-group border border-base-300 rounded-md overflow-hidden">
-            <button onClick={onSelTheme1} className={classNames('btn btn-sm no-animation', (themeValue == null || themeValue === 'system')?'btn-active':'')}>系统</button>
-            <button onClick={onSelTheme2} className={classNames('btn btn-sm no-animation', themeValue === 'light'?'btn-active':'')}>浅色</button>
-            <button onClick={onSelTheme3} className={classNames('btn btn-sm no-animation', themeValue === 'dark'?'btn-active':'')}>深色</button>
+          <div className="bili-segment-switch">
+            <button onClick={onSelTheme1} className={classNames('bili-segment-switch-item', (themeValue == null || themeValue === 'system') && 'bili-segment-switch-item-active')}>系统</button>
+            <button onClick={onSelTheme2} className={classNames('bili-segment-switch-item', themeValue === 'light' && 'bili-segment-switch-item-active')}>浅色</button>
+            <button onClick={onSelTheme3} className={classNames('bili-segment-switch-item', themeValue === 'dark' && 'bili-segment-switch-item-active')}>深色</button>
           </div>
         </FormItem>
         <FormItem title='字体大小'>
-          <div className="btn-group border border-base-300 rounded-md overflow-hidden">
-            <button onClick={onSelFontSize1} className={classNames('btn btn-sm no-animation', (fontSizeValue == null || fontSizeValue === 'normal')?'btn-active':'')}>普通</button>
-            <button onClick={onSelFontSize2} className={classNames('btn btn-sm no-animation', fontSizeValue === 'large'?'btn-active':'')}>加大</button>
+          <div className="bili-segment-switch">
+            <button onClick={onSelFontSize1} className={classNames('bili-segment-switch-item', (fontSizeValue == null || fontSizeValue === 'normal') && 'bili-segment-switch-item-active')}>普通</button>
+            <button onClick={onSelFontSize2} className={classNames('bili-segment-switch-item', fontSizeValue === 'large' && 'bili-segment-switch-item-active')}>加大</button>
           </div>
         </FormItem>
       </OptionCard>
@@ -422,7 +430,7 @@ const OptionsPage = () => {
           <input id='summarizeFloat' type='checkbox' className='toggle toggle-primary' checked={summarizeFloatValue}
                  onChange={setSummarizeFloatValue}/>
         </FormItem>
-        <FormItem title='自动发邮件' htmlFor='emailAutoSendEnabled' tip='一个视频的所有分段总结完成后，自动发送一封汇总邮件'>
+        <FormItem title='自动发邮件' htmlFor='emailAutoSendEnabled' tip='一个视频的全文总结完成后，自动发送一封汇总邮件'>
           <input id='emailAutoSendEnabled' type='checkbox' className='toggle toggle-primary' checked={emailAutoSendEnabledValue}
                  onChange={setEmailAutoSendEnabledValue}/>
         </FormItem>
@@ -474,7 +482,7 @@ const OptionsPage = () => {
             {/* </div> */}
           </div>
         </FormItem>
-        <div className='desc text-sm'>
+        <div className='desc text-sm px-1'>
           当前选择的模型的分段字数上限是<span className='font-semibold font-mono'>{MODEL_MAP[modelValue??MODEL_DEFAULT]?.tokens??'未知'}</span>
           （太接近上限总结会报错）
         </div>
@@ -482,7 +490,7 @@ const OptionsPage = () => {
       <OptionCard title='提示词配置'>
         {PROMPT_TYPES.map((item) => <FormItem key={item.type} title={item.name} htmlFor={`prompt-${item.type}`}>
           <textarea id={`prompt-${item.type}`} className='mt-2 textarea input-bordered w-full'
-                    placeholder='留空将使用内置默认提示词。支持变量：{{language}}、{{title}}、{{segment}}。'
+                    placeholder='留空将使用内置默认提示词。支持变量：{{language}}、{{title}}、{{transcript}}。兼容旧变量：{{segment}}、{{subtitles}}。'
                     value={promptsValue[item.type] ?? ''} onChange={(e) => {
                       setPromptsValue({
                         ...promptsValue,
@@ -492,7 +500,7 @@ const OptionsPage = () => {
         </FormItem>)}
       </OptionCard>
 
-      <div className='flex flex-col justify-center items-center gap-4 mt-6 mb-4'>
+      <div className='bili-panel rounded-2xl flex flex-col justify-center items-center gap-4 mt-6 mb-4 px-5 py-5'>
         <div className='flex flex-wrap justify-center gap-3'>
           <button className='btn btn-sm btn-outline' onClick={onExportConfig}>导出配置</button>
           <button className='btn btn-sm btn-outline' onClick={onImportConfig}>导入配置</button>

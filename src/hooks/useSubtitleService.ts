@@ -191,7 +191,6 @@ const useSubtitleService = () => {
                 text: chapterText,
                 fold: true,
                 chapterTitle: chapter.content,
-                summaries: {},
               })
             } else {
               // 章节内容过长，需要分割成多个segment
@@ -209,7 +208,6 @@ const useSubtitleService = () => {
                     text: getWholeText(transcriptItems.map(item => item.content)),
                     fold: true,
                     chapterTitle: chapter.content,
-                    summaries: {},
                   })
                   // reset
                   transcriptItems = []
@@ -234,7 +232,6 @@ const useSubtitleService = () => {
                 endIdx: transcriptItems[transcriptItems.length - 1].idx,
                 text: getWholeText(transcriptItems.map(item => item.content)),
                 fold: true,
-                summaries: {},
               })
               // reset
               transcriptItems = []
@@ -249,7 +246,6 @@ const useSubtitleService = () => {
           endIdx: items.length-1,
           text: getWholeText(items.map(item => item.content)),
           fold: true,
-          summaries: {},
         }]
       }
     }

@@ -1,5 +1,5 @@
 import {DEFAULT_SERVER_URL_OPENAI, SUMMARY_REPAIR_PROMPT} from '../consts/const'
-import {updateSummarySegmentStreaming} from './summarySessionService'
+import {updateVideoSummaryStreaming} from './summarySessionService'
 
 export interface ModelDiscoveryResult {
   models: string[]
@@ -250,14 +250,12 @@ export const handleChatCompleteTask = async (task: Task) => {
   const contentType = resp.headers.get('content-type')?.toLowerCase() ?? ''
   if (expectsStream && contentType.includes('text/event-stream')) {
     const summarySessionKey = task.def.extra?.summarySessionKey as string | undefined
-    const summarySegmentStartIdx = task.def.extra?.startIdx as number | undefined
     task.resp = await readChatCompletionStream({
       resp,
       onContent: async (content) => {
-        if (typeof summarySessionKey === 'string' && summarySessionKey.length > 0 && typeof summarySegmentStartIdx === 'number') {
-          await updateSummarySegmentStreaming({
+        if (typeof summarySessionKey === 'string' && summarySessionKey.length > 0) {
+          await updateVideoSummaryStreaming({
             sessionKey: summarySessionKey,
-            segmentStartIdx: summarySegmentStartIdx,
             streamingContent: content,
           })
         }

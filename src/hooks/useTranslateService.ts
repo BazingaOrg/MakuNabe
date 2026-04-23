@@ -1,6 +1,6 @@
 import {useAppDispatch, useAppSelector} from './redux'
 import {useInterval, useMemoizedFn} from 'ahooks'
-import { buildSummarySessionKey, buildSummarySessionSyncInput, isSummaryEmpty } from '@/utils/bizUtil'
+import { buildSummarySessionKey, buildSummarySessionSyncInput, getWholeText, isSummaryEmpty } from '@/utils/bizUtil'
 import { useMessage } from './useMessageService'
 import toast from 'react-hot-toast'
 import { syncSummarySessionState } from '@/redux/envReducer'
@@ -22,6 +22,7 @@ const useTranslateService = () => {
   const title = useAppSelector(state => state.env.title)
   const ctime = useAppSelector(state => state.env.ctime)
   const author = useAppSelector(state => state.env.author)
+  const transcript = useAppSelector(state => state.env.data)
   const {sendExtension} = useMessage(Boolean(envData.sidePanel))
   const summarySessionShapeKey = useMemo(() => {
     return (segments ?? []).map((segment) => `${segment.startIdx}:${segment.endIdx}:${segment.text}`).join('|')
@@ -43,9 +44,10 @@ const useTranslateService = () => {
       title,
       ctime,
       author,
+      fullText: getWholeText((transcript?.body ?? []).map((item) => item.content)),
       segments,
     })
-  }, [author, ctime, summarySessionKey, summarySessionShapeKey, title, url])
+  }, [author, ctime, summarySessionKey, title, transcript?.body, url, segments])
 
   const showDismissibleToast = useMemoizedFn((params: {
     id: string
@@ -77,14 +79,15 @@ const useTranslateService = () => {
     }
 
     const runKey = `${session.sessionKey}|${session.runStartedAt ?? ''}`
-    const orderedSegments = Object.values(session.segments)
-    const allSummaryDone = orderedSegments.length > 0 && orderedSegments.every((segment) => segment.summary?.status === 'done')
+    const allSummaryDone = session.videoSummary?.summary != null
+      && session.videoSummary.summary.status === 'done'
+      && !isSummaryEmpty(session.videoSummary.summary)
     if (allSummaryDone && summaryDoneVideoKeyRef.current !== runKey) {
       summaryDoneVideoKeyRef.current = runKey
       showDismissibleToast({
         id: `${summaryDoneToastIdPrefix}${runKey}`,
         icon: '✅',
-        message: '当前视频分段总结已全部完成（点击可关闭）',
+        message: '当前视频全文总结已完成（点击可关闭）',
       })
     }
 

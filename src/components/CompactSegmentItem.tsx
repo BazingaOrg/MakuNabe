@@ -14,8 +14,8 @@ const CompactSegmentItem = (props: {
   const fontSize = useAppSelector(state => state.env.envData.fontSize)
 
   return <div className={classNames('inline', fontSize === 'large'?'text-sm':'text-xs')}>
-    <span className={'pl-1 pr-0.5 py-0.5 cursor-pointer rounded-sm hover:bg-base-200'} onClick={moveCallback} onDoubleClick={move2Callback}>
-      <text className={classNames('font-medium', isIn ? 'text-primary underline' : '')}>{item.content}</text>
+    <span className={classNames('pl-1 pr-0.5 py-0.5 cursor-pointer rounded-md hover:bg-base-200', isIn && 'bili-current-line')} onClick={moveCallback} onDoubleClick={move2Callback}>
+      <text className={classNames('font-medium', isIn ? 'text-primary' : '')}>{item.content}</text>
     </span>
     <span className='text-base-content/75'>{!last && ','}</span>
   </div>
