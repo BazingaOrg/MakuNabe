@@ -4,7 +4,7 @@ import {useAppDispatch, useAppSelector} from '../hooks/redux'
 import {find, remove} from 'lodash-es'
 import {setCurFetched, setCurInfo, setData, setInfos, setUploadedTranscript} from '../redux/envReducer'
 import MoreBtn from './MoreBtn'
-import classNames from 'classnames'
+import classNames from '@/utils/classNames'
 import {parseTranscript} from '../utils/bizUtil'
 
 const Header = (props: {

@@ -1,7 +1,7 @@
 import React from 'react'
 import {formatTime} from '../utils/util'
 import {useAppSelector} from '../hooks/redux'
-import classNames from 'classnames'
+import classNames from '@/utils/classNames'
 
 const NormalSegmentItem = (props: {
   item: TranscriptItem

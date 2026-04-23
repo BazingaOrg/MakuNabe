@@ -1,6 +1,6 @@
 import React from 'react'
 import {useAppSelector} from '../hooks/redux'
-import classNames from 'classnames'
+import classNames from '@/utils/classNames'
 
 const CompactSegmentItem = (props: {
   item: TranscriptItem

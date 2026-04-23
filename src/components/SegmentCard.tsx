@@ -1,8 +1,8 @@
 import {MutableRefObject, useCallback, useMemo} from 'react'
 import {useAppDispatch, useAppSelector} from '../hooks/redux'
 import {setSegmentFold} from '../redux/envReducer'
-import classNames from 'classnames'
-import {BsDashSquare, BsPlusSquare} from 'react-icons/all'
+import classNames from '@/utils/classNames'
+import {BsDashSquare, BsPlusSquare} from 'react-icons/bs'
 import SegmentItem from './SegmentItem'
 import {getLastTime} from '../utils/bizUtil'
 

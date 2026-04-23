@@ -8,7 +8,7 @@ import {EventBusContext} from '../Router'
 import useTranslateService from '../hooks/useTranslateService'
 import {setFold} from '../redux/envReducer'
 import { useMessage } from '@/hooks/useMessageService'
-import classNames from 'classnames'
+import classNames from '@/utils/classNames'
 import useSystemDarkMode from '@/hooks/useSystemDarkMode'
 
 function App() {

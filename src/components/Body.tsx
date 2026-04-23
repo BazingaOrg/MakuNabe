@@ -15,7 +15,7 @@ import {
 import {FaClipboardList, FaRegArrowAltCircleDown} from 'react-icons/fa'
 import {IoMdWarning} from 'react-icons/io'
 import {MdExpandMore} from 'react-icons/md'
-import classNames from 'classnames'
+import classNames from '@/utils/classNames'
 import toast from 'react-hot-toast'
 import SegmentCard from './SegmentCard'
 import {

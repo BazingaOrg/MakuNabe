@@ -1,4 +1,4 @@
-import classNames from 'classnames'
+import classNames from '@/utils/classNames'
 import ReactMarkdown from 'react-markdown'
 import toast from 'react-hot-toast'
 

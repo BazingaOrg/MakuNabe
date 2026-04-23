@@ -14,7 +14,7 @@ import {
   WORDS_RATE,
 } from '../consts/const'
 import {IoMdWarning} from 'react-icons/io'
-import classNames from 'classnames'
+import classNames from '@/utils/classNames'
 import toast from 'react-hot-toast'
 import {useEventTarget} from 'ahooks'
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa'

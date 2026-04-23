@@ -2,7 +2,7 @@ import {PropsWithChildren, useState} from 'react'
 import {Modifier, usePopper} from 'react-popper'
 import popoverStyles from './Popover.module.less'
 import * as PopperJS from '@popperjs/core'
-import classNames from 'classnames'
+import classNames from '@/utils/classNames'
 
 interface Props extends PropsWithChildren {
   /**
