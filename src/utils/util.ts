@@ -257,7 +257,6 @@ export const removeUrlParams = (url: string, paramName: string, extraRemoveParam
   const newSearch = params.toString()
   const base = url.split('?')[0]
   const newUrl = base + (newSearch.length > 0 ? ('?' + newSearch) : '')
-  console.log(`[removeUrlParams]${paramName}: ${paramValue??''} (${url} -> ${newUrl})`)
   return {
     newUrl,
     paramValue: paramValue??undefined,

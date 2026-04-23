@@ -227,7 +227,8 @@ export const repairSummaryJson = async (params: {
 
   const errorCode = payload.error?.code ?? ''
   const errorMessage = payload.error?.message ?? ''
-  throw new Error(`${errorCode} ${errorMessage}`.trim() || 'Summary repair returned empty content')
+  const combinedErrorMessage = `${errorCode} ${errorMessage}`.trim()
+  throw new Error(combinedErrorMessage.length > 0 ? combinedErrorMessage : 'Summary repair returned empty content')
 }
 
 export const handleChatCompleteTask = async (task: Task) => {

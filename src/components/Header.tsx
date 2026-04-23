@@ -80,7 +80,7 @@ const Header = (props: {
 
   return <div className={classNames(
     'h-[48px] flex justify-between items-center cursor-pointer border-b border-base-300/70 px-3',
-    fold !== true && 'rounded-bl-[10px] rounded-br-[10px]'
+    !fold && 'rounded-bl-[10px] rounded-br-[10px]'
   )} style={{
     background: 'var(--bili-header-bg, #f4f4f4)',
     boxShadow: isDarkTheme ? 'inset 0 -1px 0 rgba(255,255,255,0.04)' : 'inset 0 -1px 0 rgba(24,25,28,0.025)',

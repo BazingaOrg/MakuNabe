@@ -85,7 +85,6 @@ class ExtensionMessaging<M extends ExtensionMessage, AllInjectMessagesType exten
 
       const tabId = sender.tab?.id
       const method = this.methods?.[req.method as keyof typeof this.methods]
-      // console.log('msg>>>', tabId, req, method != null)
       if (method != null) {
         method(req.params, {
           from: req.from,

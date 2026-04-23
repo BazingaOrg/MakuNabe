@@ -15,13 +15,14 @@ function parse (mix: ClassValue): string {
     let str = ''
     for (const m of mix) {
       const v = parse(m)
-      if (v) str += (str ? ' ' : '') + v
+      if (v.length > 0) str += (str.length > 0 ? ' ' : '') + v
     }
     return str
   }
   let str = ''
   for (const key of Object.keys(mix)) {
-    if ((mix as ClassDictionary)[key]) str += (str ? ' ' : '') + key
+    const value = mix[key]
+    if (value != null && value !== false && value !== 0 && value !== '') str += (str.length > 0 ? ' ' : '') + key
   }
   return str
 }
@@ -30,7 +31,7 @@ export default function classNames (...args: ClassValue[]): string {
   let str = ''
   for (const a of args) {
     const v = parse(a)
-    if (v) str += (str ? ' ' : '') + v
+    if (v.length > 0) str += (str.length > 0 ? ' ' : '') + v
   }
   return str
 }

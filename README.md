@@ -445,7 +445,8 @@ Use this checklist after setup:
 ## Development
 
 ```bash
-npm install
+nvm use
+npm ci
 npm run build
 ```
 

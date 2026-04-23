@@ -68,7 +68,6 @@ const MoreBtn = (props: Props) => {
   const downloadType = useAppSelector(state => state.env.tempData.downloadType)
   const [moreVisible, setMoreVisible] = useState(false)
   const eventBus = useContext(EventBusContext)
-  const segments = useAppSelector(state => state.env.segments)
   const videoSummary = useAppSelector(state => state.env.videoSummary)
   const url = useAppSelector(state => state.env.url)
   const title = useAppSelector(state => state.env.title)
@@ -226,10 +225,10 @@ const MoreBtn = (props: Props) => {
             <span className={menuIconClassName}><RiFileCopy2Line className='h-4 w-4'/></span>
             <span className='flex-1'>复制</span>
           </button>
-            <select className='select select-ghost select-xs h-8 min-h-0 rounded-full border border-base-300 bg-base-100 pr-7' value={downloadType} onChange={selectCallback}
-                    onClick={preventCallback}>
-              {DownloadTypes?.map((item: any) => <option key={item.type} value={item.type}>{item.name}</option>)}
-            </select>
+          <select className='select select-ghost select-xs h-8 min-h-0 rounded-full border border-base-300 bg-base-100 pr-7' value={downloadType} onChange={selectCallback}
+                  onClick={preventCallback}>
+            {DownloadTypes?.map((item: any) => <option key={item.type} value={item.type}>{item.name}</option>)}
+          </select>
         </div>
         <div className={menuRowClassName}>
           <button className='flex min-w-0 flex-1 items-center gap-3 text-left' onClick={(e) => {
@@ -240,27 +239,27 @@ const MoreBtn = (props: Props) => {
             <span className={menuIconClassName}><ImDownload3 className='h-4 w-4'/></span>
             <span className='flex-1'>下载</span>
           </button>
-            <select className='select select-ghost select-xs h-8 min-h-0 rounded-full border border-base-300 bg-base-100 pr-7' value={downloadType} onChange={selectCallback}
-                    onClick={preventCallback}>
-              {DownloadTypes?.map((item: any) => <option key={item.type} value={item.type}>{item.name}</option>)}
-            </select>
+          <select className='select select-ghost select-xs h-8 min-h-0 rounded-full border border-base-300 bg-base-100 pr-7' value={downloadType} onChange={selectCallback}
+                  onClick={preventCallback}>
+            {DownloadTypes?.map((item: any) => <option key={item.type} value={item.type}>{item.name}</option>)}
+          </select>
         </div>
         <button className={menuRowClassName} onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            downloadAudioCallback()
-          }}>
-            <span className={menuIconClassName}><ImDownload3 className='h-4 w-4'/></span>
-            <span className='flex-1'>下载音频 (m4s)</span>
+          e.preventDefault()
+          e.stopPropagation()
+          downloadAudioCallback()
+        }}>
+          <span className={menuIconClassName}><ImDownload3 className='h-4 w-4'/></span>
+          <span className='flex-1'>下载音频 (m4s)</span>
         </button>
         <button className={menuRowClassName} onClick={(e) => {
-            chrome.runtime.openOptionsPage()
-            setMoreVisible(false)
-            e.preventDefault()
-            e.stopPropagation()
-          }}>
-            <span className={menuIconClassName}><IoMdSettings className='h-4 w-4'/></span>
-            <span className='flex-1'>选项</span>
+          chrome.runtime.openOptionsPage()
+          setMoreVisible(false)
+          e.preventDefault()
+          e.stopPropagation()
+        }}>
+          <span className={menuIconClassName}><IoMdSettings className='h-4 w-4'/></span>
+          <span className='flex-1'>选项</span>
         </button>
       </div>
     </Popover>}

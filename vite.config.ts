@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react'
 import {visualizer} from "rollup-plugin-visualizer";
 import {crx} from '@crxjs/vite-plugin'
 import path from "path"
-// @ts-ignore
 import manifest from './manifest.config'
 
 // https://vitejs.dev/config/

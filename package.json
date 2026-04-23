@@ -5,6 +5,11 @@
   "type": "module",
   "description": "哔哩哔哩字幕列表",
   "main": "index.js",
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": "22.14.x",
+    "npm": ">=10.9.2 <11"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && node fix.cjs",
@@ -33,7 +38,6 @@
     "uuid": "^9.0.0"
   },
   "devDependencies": {
-    "@tailwindcss/line-clamp": "^0.4.2",
     "@tailwindcss/typography": "^0.5.8",
     "@types/chrome": "^0.0.277",
     "@types/lodash-es": "^4.17.6",
