@@ -289,15 +289,21 @@ const OptionsPage = () => {
       try {
         const fileText = await file.text()
         const importedConfig = await decryptEnvDataFromImport(fileText, passphrase)
+        let importedApiKeyConfigured = false
         if (typeof importedConfig.apiKey === 'string' && importedConfig.apiKey.length > 0) {
           await sendExtension(null, 'SET_API_SECRET', {
             apiKey: importedConfig.apiKey,
           })
+          const {configured} = await sendExtension(null, 'GET_API_SECRET_STATUS')
+          if (configured !== true) {
+            throw new Error('API key 恢复失败，请重新导入或手动填写')
+          }
+          importedApiKeyConfigured = true
         }
         const mergedEnvData = sanitizeEnvData({
           ...getFormEnvData(),
           ...importedConfig.envData,
-          apiKeyConfigured: typeof importedConfig.apiKey === 'string' && importedConfig.apiKey.length > 0
+          apiKeyConfigured: importedApiKeyConfigured
             ? true
             : importedConfig.envData.apiKeyConfigured,
         })

@@ -175,28 +175,32 @@ export const encryptEnvDataForExport = async (params: {
 }
 
 const parseImportPayload = (data: unknown): ExportPayloadV1 => {
-  const sanitizedEnvData = sanitizeEnvData(stripTransientEnvData(data as EnvData))
-  if (sanitizedEnvData != null) {
-    return {
-      envData: sanitizedEnvData,
-    }
-  }
-
   if (data == null || typeof data !== 'object') {
     throw new ConfigTransferError('INVALID_PAYLOAD', '解密后的配置内容为空')
   }
 
   const payload = data as Partial<ExportPayloadV1>
-  const sanitizedPayloadEnvData = sanitizeEnvData(stripTransientEnvData(payload.envData as EnvData))
-  if (sanitizedPayloadEnvData == null) {
+  if (Object.prototype.hasOwnProperty.call(payload, 'envData')) {
+    const sanitizedPayloadEnvData = sanitizeEnvData(stripTransientEnvData(payload.envData as EnvData))
+    if (sanitizedPayloadEnvData == null) {
+      throw new ConfigTransferError('INVALID_PAYLOAD', '解密后的配置内容为空')
+    }
+
+    return {
+      envData: sanitizedPayloadEnvData,
+      apiKey: typeof payload.apiKey === 'string' && payload.apiKey.trim().length > 0
+        ? payload.apiKey.trim()
+        : undefined,
+    }
+  }
+
+  const sanitizedEnvData = sanitizeEnvData(stripTransientEnvData(data as EnvData))
+  if (sanitizedEnvData == null) {
     throw new ConfigTransferError('INVALID_PAYLOAD', '解密后的配置内容为空')
   }
 
   return {
-    envData: sanitizedPayloadEnvData,
-    apiKey: typeof payload.apiKey === 'string' && payload.apiKey.trim().length > 0
-      ? payload.apiKey.trim()
-      : undefined,
+    envData: sanitizedEnvData,
   }
 }
 
