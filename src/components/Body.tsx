@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
   setAutoScroll,
   setCheckAutoScroll,
+  setEnvData,
   setFoldAll,
   setNeedScroll,
   setSegmentFold,
@@ -130,7 +131,7 @@ const Body = () => {
   const totalHeight = useAppSelector(state => state.env.totalHeight)
   // const title = useAppSelector(state => state.env.title)
   // const fontSize = useAppSelector(state => state.env.envData.fontSize)
-  const { disconnected } = useMessaging(DEFAULT_USE_PORT)
+  const { disconnected, sendExtension } = useMessaging(DEFAULT_USE_PORT)
   const showFloatingSummary = summarizeEnable === true
     && envData.summarizeFloat === true
     && summaryInViewport !== true
@@ -153,8 +154,12 @@ const Body = () => {
     dispatch(setNeedScroll(true))
   }, [dispatch])
 
-  const onSummarizeAll = useCallback(() => {
-    if (envData.apiKeyConfigured !== true) {
+  const onSummarizeAll = useCallback(async () => {
+    const {configured} = await sendExtension(null, 'GET_API_SECRET_STATUS')
+    dispatch(setEnvData({
+      apiKeyConfigured: configured,
+    }))
+    if (configured !== true) {
       toast.error('请先在选项页面设置ApiKey!')
       return
     }
@@ -162,7 +167,7 @@ const Body = () => {
       console.error(error)
       toast.error(error instanceof Error ? error.message : '全文总结创建失败')
     })
-  }, [addSummarizeTask, envData.apiKeyConfigured])
+  }, [addSummarizeTask, dispatch, sendExtension])
 
   const onFoldAll = useCallback(() => {
     dispatch(setFoldAll(foldAll !== true))
