@@ -40,9 +40,6 @@ interface EnvState {
    * 是否输入中（中文）
    */
   inputting: boolean
-
-  // 当前视频是否计算过操作
-  reviewAction: boolean
 }
 
 const initialState: EnvState = {
@@ -63,8 +60,6 @@ const initialState: EnvState = {
   fold: true,
 
   inputting: false,
-
-  reviewAction: false,
 }
 
 export const slice = createSlice({
@@ -85,9 +80,6 @@ export const slice = createSlice({
         ...state.tempData,
         ...action.payload,
       }
-    },
-    setReviewAction: (state, action: PayloadAction<boolean>) => {
-      state.reviewAction = action.payload
     },
     setPath: (state, action: PayloadAction<'app' | 'options' | undefined>) => {
       state.path = action.payload
@@ -223,7 +215,6 @@ export const {
   setTaskIds,
   setAutoScroll,
   setNoVideo,
-  setReviewAction,
   setNeedScroll,
   setCurIdx,
   setEnvData,

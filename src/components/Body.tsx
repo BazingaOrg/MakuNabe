@@ -26,7 +26,6 @@ import {
 } from '../consts/const'
 import useTranslate from '../hooks/useTranslate'
 import useKeyService from '../hooks/useKeyService'
-import RateExtension from '../components/RateExtension'
 import ApiKeyReminder from './ApiKeyReminder'
 import { useMessaging } from '../message'
 import {useInViewport} from 'ahooks'
@@ -262,8 +261,6 @@ const Body = () => {
         segmentIdx={segmentIdx} bodyRef={bodyRef} />)}
 
       <ApiKeyReminder />
-
-      <RateExtension />
     </div>
 
     {showFloatingSummary && <div

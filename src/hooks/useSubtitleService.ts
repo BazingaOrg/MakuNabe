@@ -10,7 +10,6 @@ import {
   setSegmentFold,
   setSegments,
   setTotalHeight,
-  setTempData,
 } from '../redux/envReducer'
 import {EventBusContext} from '../Router'
 import {EVENT_EXPAND, TOTAL_HEIGHT_MAX, TOTAL_HEIGHT_MIN, WORDS_MIN, WORDS_RATE} from '../consts/const'
@@ -39,18 +38,7 @@ const useSubtitleService = () => {
   const eventBus = useContext(EventBusContext)
   const needScroll = useAppSelector(state => state.env.needScroll)
   const segments = useAppSelector(state => state.env.segments)
-  const reviewed = useAppSelector(state => state.env.tempData.reviewed)
-  const reviewActions = useAppSelector(state => state.env.tempData.reviewActions)
   const {sendInject} = useMessage(Boolean(envData.sidePanel))
-
-  // 如果reviewActions达到15次，则设置reviewed为false
-  useEffect(() => {
-    if (reviewed === undefined && reviewActions != null && reviewActions >= 15) {
-      dispatch(setTempData({
-        reviewed: false
-      }))
-    }
-  }, [reviewActions, dispatch, reviewed])
 
   // 有数据时自动展开
   useEffect(() => {

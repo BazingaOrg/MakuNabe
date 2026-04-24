@@ -64,8 +64,6 @@ export const sanitizeTempData = (data?: TempData): TempData | undefined => {
   return {
     downloadType: data.downloadType,
     compact: data.compact,
-    reviewActions: data.reviewActions,
-    reviewed: data.reviewed,
     summaryEmailSentVideoKey: data.summaryEmailSentVideoKey,
   }
 }

@@ -2,8 +2,6 @@ import {useAppDispatch, useAppSelector} from './redux'
 import {useCallback} from 'react'
 import {
   setLastSummarizeTime,
-  setReviewAction,
-  setTempData,
   setVideoSummaryState
 } from '../redux/envReducer'
 import {
@@ -48,23 +46,12 @@ const useTranslate = () => {
   const author = useAppSelector(state => state.env.author)
   const transcript = useAppSelector(state => state.env.data)
   const segments = useAppSelector(state => state.env.segments)
-  const reviewed = useAppSelector(state => state.env.tempData.reviewed)
-  const reviewAction = useAppSelector(state => state.env.reviewAction)
-  const reviewActions = useAppSelector(state => state.env.tempData.reviewActions)
   const {sendExtension} = useMessage(Boolean(envData.sidePanel))
   const summarySessionShapeKey = useCallback((segmentsToHash?: Segment[]) => {
     return (segmentsToHash ?? []).map((item) => `${item.startIdx}:${item.endIdx}:${item.text}`).join('|')
   }, [])
 
   const addSummarizeTask = useCallback(async () => {
-    // review action
-    if (reviewed === undefined && !reviewAction) {
-      dispatch(setReviewAction(true))
-      dispatch(setTempData({
-        reviewActions: (reviewActions ?? 0) + 1
-      }))
-    }
-
     const fullText = getWholeText((transcript?.body ?? []).map((item) => item.content))
     if (fullText.length < SUMMARIZE_THRESHOLD) {
       toast.error('全文字幕过短，无法总结')
@@ -136,7 +123,7 @@ const useTranslate = () => {
     }))
     dispatch(setLastSummarizeTime(summaryRunStartedAt))
     await sendExtension(null, 'ADD_TASK', {taskDef})
-  }, [author, ctime, dispatch, envData, reviewAction, reviewActions, reviewed, segments, sendExtension, summarySessionShapeKey, summarizeLanguage.name, title, transcript?.body, url])
+  }, [author, ctime, dispatch, envData, segments, sendExtension, summarySessionShapeKey, summarizeLanguage.name, title, transcript?.body, url])
 
   return {addSummarizeTask}
 }
