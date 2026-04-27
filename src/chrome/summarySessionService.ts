@@ -67,6 +67,19 @@ export const cleanupSummarySessions = async (params?: {keepSessionKey?: string})
   }
 }
 
+export const clearSummarySessions = async () => {
+  const sessions = await listStoredSummarySessions()
+  const storageKeys = sessions.map(item => item.storageKey)
+
+  if (storageKeys.length > 0) {
+    await chrome.storage.local.remove(storageKeys)
+  }
+
+  return {
+    deletedCount: storageKeys.length,
+  }
+}
+
 const loadSummarySession = async (sessionKey: string): Promise<SummarySession | undefined> => {
   const storageKey = getSummarySessionStorageKey(sessionKey)
   const result = await chrome.storage.local.get(storageKey)

@@ -64,6 +64,12 @@ interface ExtensionGetSummarySessionMessage extends ExtensionMessage<{
   method: 'GET_SUMMARY_SESSION'
 }
 
+interface ExtensionClearSummarySessionsMessage extends ExtensionMessage<{}, {
+  deletedCount: number
+}> {
+  method: 'CLEAR_SUMMARY_SESSIONS'
+}
+
 interface ExtensionDiscoverModelsMessage extends ExtensionMessage<{
   serverUrl?: string
   apiKey?: string
@@ -99,7 +105,7 @@ interface ExtensionGetApiSecretMessage extends ExtensionMessage<{}, {
   method: 'GET_API_SECRET'
 }
 
-export type AllExtensionMessages = ExtensionGetTabIdMessage | ExtensionCloseSidePanelMessage | ExtensionAddTaskMessage | ExtensionGetTaskMessage | ExtensionShowFlagMessage | ExtensionSendSummaryEmailMessage | ExtensionUpsertSummarySessionMessage | ExtensionGetSummarySessionMessage | ExtensionDiscoverModelsMessage | ExtensionSetApiSecretMessage | ExtensionClearApiSecretMessage | ExtensionGetApiSecretStatusMessage | ExtensionGetApiSecretMessage
+export type AllExtensionMessages = ExtensionGetTabIdMessage | ExtensionCloseSidePanelMessage | ExtensionAddTaskMessage | ExtensionGetTaskMessage | ExtensionShowFlagMessage | ExtensionSendSummaryEmailMessage | ExtensionUpsertSummarySessionMessage | ExtensionGetSummarySessionMessage | ExtensionClearSummarySessionsMessage | ExtensionDiscoverModelsMessage | ExtensionSetApiSecretMessage | ExtensionClearApiSecretMessage | ExtensionGetApiSecretStatusMessage | ExtensionGetApiSecretMessage
 
 // inject
 interface InjectToggleDisplayMessage extends InjectMessage<{}> {

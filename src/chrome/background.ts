@@ -4,7 +4,7 @@ import { DEFAULT_USE_PORT, STORAGE_ENV} from '@/consts/const'
 import { AllExtensionMessages } from '@/message-typings'
 import { ExtensionMessaging, TAG_TARGET_INJECT } from '../message'
 import {discoverModels} from './openaiService'
-import {cleanupSummarySessions, getSummarySession, markVideoSummaryPending, upsertSummarySession} from './summarySessionService'
+import {clearSummarySessions, cleanupSummarySessions, getSummarySession, markVideoSummaryPending, upsertSummarySession} from './summarySessionService'
 import {retrySummaryEmailFromAlarm} from './summaryEmailService'
 import {clearApiSecret, ensureLegacyApiSecretReady, getApiSecret, hasApiSecret, setApiSecret} from './secretService'
 
@@ -151,6 +151,9 @@ const methods: {
   },
   GET_SUMMARY_SESSION: async (params, context) => {
     return await getSummarySession(params.sessionKey)
+  },
+  CLEAR_SUMMARY_SESSIONS: async (params, context) => {
+    return await clearSummarySessions()
   },
   DISCOVER_MODELS: async (params, context) => {
     await ensureLegacyApiSecretReady()
