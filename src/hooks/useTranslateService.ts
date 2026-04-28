@@ -7,9 +7,6 @@ import { syncSummarySessionState } from '@/redux/envReducer'
 import { createElement, useEffect, useMemo, useRef } from 'react'
 import {logMessagingError} from '@/utils/messageError'
 
-const SUMMARY_SUCCESS_TOAST_DURATION_MS = 8000
-const EMAIL_SUCCESS_TOAST_DURATION_MS = 8000
-
 const getToastVideoLabel = (session: SummarySession) => {
   const title = session.videoMeta.title?.trim()
   if (title == null || title.length === 0) {
@@ -107,7 +104,6 @@ const useTranslateService = () => {
         id: toastId,
         icon: '✅',
         message: `${videoLabel}全文总结已完成（点击可关闭）`,
-        duration: SUMMARY_SUCCESS_TOAST_DURATION_MS,
       })
     }
 
@@ -131,7 +127,6 @@ const useTranslateService = () => {
         message: emailState.error != null
           ? `${videoLabel}没有可发送的有效总结，已跳过自动邮件（点击可关闭）`
           : `${videoLabel}总结邮件发送成功（点击可关闭）`,
-        duration: emailState.error != null ? Infinity : EMAIL_SUCCESS_TOAST_DURATION_MS,
       })
     } else if (emailState.status === 'failed') {
       const toastId = `${emailToastIdPrefix}${runKey}`
@@ -157,6 +152,17 @@ const useTranslateService = () => {
     notifySummarySession(session)
   })
 
+  const dismissActiveToasts = useMemoizedFn(() => {
+    if (activeSummaryDoneToastIdRef.current != null) {
+      toast.dismiss(activeSummaryDoneToastIdRef.current)
+      activeSummaryDoneToastIdRef.current = undefined
+    }
+    if (activeEmailToastIdRef.current != null) {
+      toast.dismiss(activeEmailToastIdRef.current)
+      activeEmailToastIdRef.current = undefined
+    }
+  })
+
   useEffect(() => {
     if (previousSummarySessionKeyRef.current == null) {
       previousSummarySessionKeyRef.current = summarySessionKey
@@ -167,18 +173,17 @@ const useTranslateService = () => {
       return
     }
 
-    if (activeSummaryDoneToastIdRef.current != null) {
-      toast.dismiss(activeSummaryDoneToastIdRef.current)
-      activeSummaryDoneToastIdRef.current = undefined
-    }
-    if (activeEmailToastIdRef.current != null) {
-      toast.dismiss(activeEmailToastIdRef.current)
-      activeEmailToastIdRef.current = undefined
-    }
+    dismissActiveToasts()
     summaryDoneVideoKeyRef.current = undefined
     emailStatusToastKeyRef.current = undefined
     previousSummarySessionKeyRef.current = summarySessionKey
-  }, [summarySessionKey])
+  }, [dismissActiveToasts, summarySessionKey])
+
+  useEffect(() => {
+    return () => {
+      dismissActiveToasts()
+    }
+  }, [dismissActiveToasts])
 
   useEffect(() => {
     if (summarySessionSyncInput == null) {
