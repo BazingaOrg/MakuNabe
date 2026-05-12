@@ -2,6 +2,7 @@ import {SUMMARY_SESSION_MAX_COUNT, SUMMARY_SESSION_RETENTION_MS} from '@/consts/
 import {extractJsonObject, extractStreamingSummaryPreview} from '@/utils/bizUtil'
 
 const SUMMARY_SESSION_STORAGE_PREFIX = 'makunabe_summary_session:'
+const SUMMARY_SESSION_MAX_BYTES = 6 * 1024 * 1024
 const STREAM_SAVE_INTERVAL_MS = 600
 const streamPersistState = new Map<string, {
   lastSavedAt: number
@@ -10,6 +11,17 @@ const streamPersistState = new Map<string, {
 
 const getSummarySessionStorageKey = (sessionKey: string) => {
   return `${SUMMARY_SESSION_STORAGE_PREFIX}${sessionKey}`
+}
+
+const isValidStoredSession = (value: unknown): value is SummarySession => {
+  if (value == null || typeof value !== 'object') return false
+  const record = value as Record<string, unknown>
+  if (typeof record.sessionKey !== 'string' || record.sessionKey.length === 0) return false
+  if (typeof record.createdAt !== 'number') return false
+  if (typeof record.updatedAt !== 'number') return false
+  if (record.segments == null || typeof record.segments !== 'object') return false
+  if (record.videoMeta == null || typeof record.videoMeta !== 'object') return false
+  return true
 }
 
 const listStoredSummarySessions = async (): Promise<Array<{storageKey: string, session: SummarySession}>> => {
@@ -22,12 +34,19 @@ const listStoredSummarySessions = async (): Promise<Array<{storageKey: string, s
     }
 
     try {
+      const parsed: unknown = JSON.parse(rawValue)
+      if (!isValidStoredSession(parsed)) {
+        console.error('Stored summary session has invalid shape, removing', storageKey)
+        await chrome.storage.local.remove(storageKey)
+        continue
+      }
       sessions.push({
         storageKey,
-        session: JSON.parse(rawValue) as SummarySession,
+        session: parsed,
       })
     } catch (error) {
       console.error('Failed to parse stored summary session during cleanup', storageKey, error)
+      await chrome.storage.local.remove(storageKey)
     }
   }
 
@@ -53,13 +72,29 @@ export const cleanupSummarySessions = async (params?: {keepSessionKey?: string})
     }
   }
 
+  const isPendingEmail = (item: {session: SummarySession}) => item.session.email?.status === 'pending'
+
   const activeSessions = sessions
     .filter(item => !keysToDelete.has(item.storageKey) && item.storageKey !== keepStorageKey)
     .sort((left, right) => right.session.updatedAt - left.session.updatedAt)
 
   const overflowSessions = activeSessions.slice(Math.max(0, SUMMARY_SESSION_MAX_COUNT - (keepStorageKey != null ? 1 : 0)))
   for (const item of overflowSessions) {
+    if (isPendingEmail(item)) continue
     keysToDelete.add(item.storageKey)
+  }
+
+  // Byte-budget pruning: oldest first, skip kept session and pending-email sessions.
+  const survivors = activeSessions.filter(item => !keysToDelete.has(item.storageKey))
+  let totalBytes = survivors.reduce((sum, item) => sum + JSON.stringify(item.session).length * 2, 0)
+  if (totalBytes > SUMMARY_SESSION_MAX_BYTES) {
+    const oldestFirst = [...survivors].sort((left, right) => left.session.updatedAt - right.session.updatedAt)
+    for (const item of oldestFirst) {
+      if (totalBytes <= SUMMARY_SESSION_MAX_BYTES) break
+      if (isPendingEmail(item)) continue
+      keysToDelete.add(item.storageKey)
+      totalBytes -= JSON.stringify(item.session).length * 2
+    }
   }
 
   if (keysToDelete.size > 0) {
@@ -90,9 +125,16 @@ const loadSummarySession = async (sessionKey: string): Promise<SummarySession | 
   }
 
   try {
-    return JSON.parse(rawValue) as SummarySession
+    const parsed: unknown = JSON.parse(rawValue)
+    if (!isValidStoredSession(parsed)) {
+      console.error('Stored summary session has invalid shape, removing', sessionKey)
+      await chrome.storage.local.remove(storageKey)
+      return undefined
+    }
+    return parsed
   } catch (error) {
     console.error('Failed to parse summary session from storage', sessionKey, error)
+    await chrome.storage.local.remove(storageKey)
     return undefined
   }
 }

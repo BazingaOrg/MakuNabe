@@ -70,7 +70,6 @@ const OptionsPage = () => {
   const envData = useAppSelector(state => state.env.envData)
   const {sendExtension} = useMessage(false)
   const {value: sidePanelValue, setValue: setSidePanelChecked, onChange: setSidePanelValue} = useEventChecked(envData.sidePanel)
-  const {value: autoInsertValue, setValue: setAutoInsertChecked, onChange: setAutoInsertValue} = useEventChecked(envData.manualInsert !== true)
   const {value: autoExpandValue, setValue: setAutoExpandChecked, onChange: setAutoExpandValue} = useEventChecked(envData.autoExpand)
   const {value: summarizeEnableValue, setValue: setSummarizeEnableChecked, onChange: setSummarizeEnableValue} = useEventChecked(envData.summarizeEnable)
   const {value: emailAutoSendEnabledValue, setValue: setEmailAutoSendEnabledChecked, onChange: setEmailAutoSendEnabledValue} = useEventChecked(envData.emailAutoSendEnabled)
@@ -133,7 +132,6 @@ const OptionsPage = () => {
   const getFormEnvData = useCallback((): EnvData => {
     return {
       sidePanel: sidePanelValue,
-      manualInsert: autoInsertValue !== true,
       autoExpand: autoExpandValue,
       apiKeyConfigured: apiKeyAvailable,
       serverUrl: serverUrlValue,
@@ -155,11 +153,10 @@ const OptionsPage = () => {
       prompts: promptsValue,
       chapterMode: chapterModeValue,
     }
-  }, [sidePanelValue, autoInsertValue, autoExpandValue, apiKeyAvailable, serverUrlValue, modelValue, customModelValue, customModelTokensValue, discoveredModelsValue, themeValue, summarizeEnableValue, emailAutoSendEnabledValue, emailRecipientValue, emailWebhookUrlValue, emailSubjectTemplateValue, summarizeFloatValue, summarizeLanguageValue, summaryStrategyValue, wordsValue, fontSizeValue, promptsValue, chapterModeValue])
+  }, [sidePanelValue, autoExpandValue, apiKeyAvailable, serverUrlValue, modelValue, customModelValue, customModelTokensValue, discoveredModelsValue, themeValue, summarizeEnableValue, emailAutoSendEnabledValue, emailRecipientValue, emailWebhookUrlValue, emailSubjectTemplateValue, summarizeFloatValue, summarizeLanguageValue, summaryStrategyValue, wordsValue, fontSizeValue, promptsValue, chapterModeValue])
 
   const applyFormEnvData = useCallback((nextEnvData: EnvData) => {
     setSidePanelChecked(nextEnvData.sidePanel)
-    setAutoInsertChecked(!(nextEnvData.manualInsert ?? false))
     setAutoExpandChecked(nextEnvData.autoExpand)
     setSummarizeEnableChecked(nextEnvData.summarizeEnable)
     setEmailAutoSendEnabledChecked(nextEnvData.emailAutoSendEnabled)
@@ -185,7 +182,7 @@ const OptionsPage = () => {
     setFontSizeValue(nextEnvData.fontSize)
     setWordsValue(nextEnvData.words)
     setPromptsValue(nextEnvData.prompts ?? {})
-  }, [setSidePanelChecked, setAutoInsertChecked, setAutoExpandChecked, setSummarizeEnableChecked, setEmailAutoSendEnabledChecked, setSummarizeFloatChecked, setChapterModeChecked, triggerValueChange, onChangeApiKeyValue, onChangeModelValue, onChangeCustomModelValue, onChangeSummarizeLanguageValue, onChangeSummaryStrategyValue, onChangeEmailRecipientValue, onChangeEmailWebhookUrlValue, onChangeEmailSubjectTemplateValue])
+  }, [setSidePanelChecked, setAutoExpandChecked, setSummarizeEnableChecked, setEmailAutoSendEnabledChecked, setSummarizeFloatChecked, setChapterModeChecked, triggerValueChange, onChangeApiKeyValue, onChangeModelValue, onChangeCustomModelValue, onChangeSummarizeLanguageValue, onChangeSummaryStrategyValue, onChangeEmailRecipientValue, onChangeEmailWebhookUrlValue, onChangeEmailSubjectTemplateValue])
 
   useEffect(() => {
     setApiKeyConfiguredValue(envData.apiKeyConfigured === true)
@@ -410,21 +407,6 @@ const OptionsPage = () => {
     setModelDiscoveryError(undefined)
   }, [onChangeApiKeyValue, triggerValueChange])
 
-  const onClearSummaryHistory = useCallback(async () => {
-    const confirmed = window.confirm('确定要清空所有已保存的视频总结历史吗？这个操作不会删除设置或 API key；已缓存的总结会被移除，如果有正在生成的总结，可能需要重新生成。')
-    if (!confirmed) {
-      return
-    }
-
-    try {
-      const result = await sendExtension(null, 'CLEAR_SUMMARY_SESSIONS', {})
-      toast.success(`已清空 ${result.deletedCount} 条历史总结`)
-    } catch (error) {
-      console.error(error)
-      toast.error('清空历史总结失败')
-    }
-  }, [sendExtension])
-
   const onSelTheme1 = useCallback(() => {
     setThemeValue('system')
   }, [])
@@ -456,10 +438,6 @@ const OptionsPage = () => {
           <input id='sidePanel' type='checkbox' className='toggle toggle-primary' checked={sidePanelValue}
                  onChange={setSidePanelValue}/>
         </FormItem>
-        {sidePanelValue !== true && <FormItem title='自动插入' htmlFor='autoInsert' tip='是否自动插入字幕列表(可以手动点击扩展图标插入)'>
-          <input id='autoInsert' type='checkbox' className='toggle toggle-primary' checked={autoInsertValue}
-                 onChange={setAutoInsertValue}/>
-        </FormItem>}
         {sidePanelValue !== true && <FormItem title='自动展开' htmlFor='autoExpand' tip='是否视频有字幕时自动展开字幕列表'>
           <input id='autoExpand' type='checkbox' className='toggle toggle-primary' checked={autoExpandValue}
                  onChange={setAutoExpandValue}/>
@@ -512,7 +490,7 @@ const OptionsPage = () => {
                  placeholder={DEFAULT_SERVER_URL_OPENAI} value={serverUrlValue}
                  onChange={e => setServerUrlValue(e.target.value)}/>
         </FormItem>}
-        {<FormItem title='模型选择' htmlFor='modelSel' tip='注意，不同模型有不同价格与token限制'>
+        {<FormItem title='模型选择' htmlFor='modelSel' tip='Context limits vary by model'>
           <select id='modelSel' className="select select-sm select-bordered" value={modelValue}
                   onChange={onChangeModelValue}>
             {modelOptions.map(model => <option key={model.code} value={model.code}>{model.name}</option>)}
@@ -556,16 +534,6 @@ const OptionsPage = () => {
         <FormItem title='自动发邮件' htmlFor='emailAutoSendEnabled' tip='一个视频的全文总结完成后，自动发送一封汇总邮件'>
           <input id='emailAutoSendEnabled' type='checkbox' className='toggle toggle-primary' checked={emailAutoSendEnabledValue}
                  onChange={setEmailAutoSendEnabledValue}/>
-        </FormItem>
-        <FormItem title='历史总结' tip='清空保存在本机浏览器中的视频总结缓存，不影响设置和 API key'>
-          <div className='flex flex-col gap-1'>
-            <button className='btn btn-xs btn-outline active:scale-95 self-start' onClick={onClearSummaryHistory}>
-              清空历史总结
-            </button>
-            <div className='text-xs desc-lighter'>
-              默认会自动保留最近 7 天、最多 50 条历史总结；这里可手动立即清空。
-            </div>
-          </div>
         </FormItem>
         <FormItem title='默认收件人' htmlFor='emailRecipient' tip='多个收件人请用英文逗号分隔'>
           <input id='emailRecipient' type='text' className='input input-sm input-bordered w-full'

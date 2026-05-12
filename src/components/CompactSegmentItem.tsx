@@ -21,4 +21,4 @@ const CompactSegmentItem = (props: {
   </div>
 }
 
-export default CompactSegmentItem
+export default React.memo(CompactSegmentItem)

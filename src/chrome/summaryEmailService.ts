@@ -4,7 +4,20 @@ import {getSummaryStr, isSummaryEmpty} from '@/utils/bizUtil'
 import dayjs from 'dayjs'
 
 const SUMMARY_EMAIL_RETRY_PREFIX = 'makunabe-summary-email-retry:'
-const SUMMARY_EMAIL_RETRY_DELAY_MS = 10 * 1000
+const SUMMARY_EMAIL_RETRY_DELAYS_MS = [
+  10 * 1000,
+  30 * 1000,
+  2 * 60 * 1000,
+  10 * 60 * 1000,
+  30 * 60 * 1000,
+  2 * 60 * 60 * 1000,
+]
+export const SUMMARY_EMAIL_MAX_ATTEMPTS = SUMMARY_EMAIL_RETRY_DELAYS_MS.length
+
+export const pickRetryDelayMs = (attemptCount: number) => {
+  const index = Math.min(Math.max(attemptCount - 1, 0), SUMMARY_EMAIL_RETRY_DELAYS_MS.length - 1)
+  return SUMMARY_EMAIL_RETRY_DELAYS_MS[index]
+}
 
 const getRetryAlarmName = (sessionKey: string) => {
   return `${SUMMARY_EMAIL_RETRY_PREFIX}${sessionKey}`
@@ -217,12 +230,30 @@ export const ensureSummaryEmailSent = async (sessionKey: string) => {
     await saveSummarySession(session)
     await clearRetryAlarm(sessionKey)
   } catch (error: any) {
-    const retryAt = Date.now() + SUMMARY_EMAIL_RETRY_DELAY_MS
+    const attemptCount = session.email?.attemptCount ?? 1
+    const errorMessage = error?.name === 'AbortError'
+      ? 'Webhook request timeout'
+      : (error?.message ?? 'Unknown webhook error')
+
+    if (attemptCount >= SUMMARY_EMAIL_MAX_ATTEMPTS) {
+      session.email = {
+        ...session.email,
+        status: 'failed',
+        retryAt: undefined,
+        error: `${errorMessage} (gave up after ${attemptCount} attempts)`,
+      }
+      session.updatedAt = Date.now()
+      await saveSummarySession(session)
+      await clearRetryAlarm(sessionKey)
+      return
+    }
+
+    const retryAt = Date.now() + pickRetryDelayMs(attemptCount)
     session.email = {
       ...session.email,
       status: 'failed',
       retryAt,
-      error: error?.name === 'AbortError' ? 'Webhook request timeout' : (error?.message ?? 'Unknown webhook error'),
+      error: errorMessage,
     }
     session.updatedAt = Date.now()
     await saveSummarySession(session)

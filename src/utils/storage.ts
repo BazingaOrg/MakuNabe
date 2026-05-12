@@ -1,4 +1,3 @@
-import {storageWeb} from './storage_web'
 import {storageChromeClient} from './storage_chrome_client'
 
 export interface IStorage {
@@ -8,12 +7,10 @@ export interface IStorage {
   getStoreKeys: () => Promise<string[] | undefined>
 }
 
-export type StorageType = 'web' | 'chrome_client'
+export type StorageType = 'chrome_client'
 
 export const getStorage = (type: StorageType): IStorage => {
   switch (type) {
-    case 'web':
-      return storageWeb
     case 'chrome_client':
       return storageChromeClient
     default:

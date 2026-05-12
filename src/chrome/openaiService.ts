@@ -1,6 +1,10 @@
 import {DEFAULT_SERVER_URL_OPENAI, SUMMARY_REPAIR_PROMPT} from '../consts/const'
 import {updateVideoSummaryStreaming} from './summarySessionService'
 
+const CHAT_STREAM_STALL_TIMEOUT_MS = 30 * 1000
+const CHAT_TOTAL_TIMEOUT_MS = 5 * 60 * 1000
+const REPAIR_TOTAL_TIMEOUT_MS = 60 * 1000
+
 export interface ModelDiscoveryResult {
   models: string[]
 }
@@ -97,9 +101,10 @@ const parseChatCompletionChunk = (line: string) => {
 
 const readChatCompletionStream = async (params: {
   resp: Response
+  onProgress?: () => void
   onContent?: (content: string) => Promise<void>
 }) => {
-  const {resp, onContent} = params
+  const {resp, onProgress, onContent} = params
   if (resp.body == null) {
     throw new Error('Readable stream is not available')
   }
@@ -114,6 +119,7 @@ const readChatCompletionStream = async (params: {
     if (done) {
       break
     }
+    onProgress?.()
 
     bufferedText += decoder.decode(value, {stream: true})
     const lines = bufferedText.split('\n')
@@ -187,101 +193,129 @@ export const repairSummaryJson = async (params: {
   content: string
 }) => {
   const serverUrl = getServerUrl(params.serverUrl)
-  const resp = await fetch(`${serverUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(typeof params.apiKey === 'string' && params.apiKey.length > 0 ? {Authorization: 'Bearer ' + params.apiKey} : {}),
-    },
-    body: JSON.stringify({
-      model: params.model,
-      messages: [
-        {
-          role: 'system',
-          content: SUMMARY_REPAIR_PROMPT,
-        },
-        {
-          role: 'user',
-          content: params.content,
-        },
-      ],
-      temperature: 0,
-      n: 1,
-      stream: false,
-    }),
-  })
+  const controller = new AbortController()
+  const totalTimer = setTimeout(() => controller.abort(), REPAIR_TOTAL_TIMEOUT_MS)
+  try {
+    const resp = await fetch(`${serverUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(typeof params.apiKey === 'string' && params.apiKey.length > 0 ? {Authorization: 'Bearer ' + params.apiKey} : {}),
+      },
+      body: JSON.stringify({
+        model: params.model,
+        messages: [
+          {
+            role: 'system',
+            content: SUMMARY_REPAIR_PROMPT,
+          },
+          {
+            role: 'user',
+            content: params.content,
+          },
+        ],
+        temperature: 0,
+        n: 1,
+        stream: false,
+      }),
+      signal: controller.signal,
+    })
 
-  if (!resp.ok) {
-    const errorMessage = await getErrorMessage(resp)
-    throw new Error(errorMessage ?? `Summary repair failed: ${resp.status}`)
-  }
+    if (!resp.ok) {
+      const errorMessage = await getErrorMessage(resp)
+      throw new Error(errorMessage ?? `Summary repair failed: ${resp.status}`)
+    }
 
-  const payload = await resp.json() as {
-    choices?: Array<{ message?: { content?: string } }>
-    error?: { code?: string, message?: string }
-  }
-  const repairedContent = payload.choices?.[0]?.message?.content?.trim()
-  if (typeof repairedContent === 'string' && repairedContent.length > 0) {
-    return repairedContent
-  }
+    const payload = await resp.json() as {
+      choices?: Array<{ message?: { content?: string } }>
+      error?: { code?: string, message?: string }
+    }
+    const repairedContent = payload.choices?.[0]?.message?.content?.trim()
+    if (typeof repairedContent === 'string' && repairedContent.length > 0) {
+      return repairedContent
+    }
 
-  const errorCode = payload.error?.code ?? ''
-  const errorMessage = payload.error?.message ?? ''
-  const combinedErrorMessage = `${errorCode} ${errorMessage}`.trim()
-  throw new Error(combinedErrorMessage.length > 0 ? combinedErrorMessage : 'Summary repair returned empty content')
+    const errorCode = payload.error?.code ?? ''
+    const errorMessage = payload.error?.message ?? ''
+    const combinedErrorMessage = `${errorCode} ${errorMessage}`.trim()
+    throw new Error(combinedErrorMessage.length > 0 ? combinedErrorMessage : 'Summary repair returned empty content')
+  } finally {
+    clearTimeout(totalTimer)
+  }
 }
 
 export const handleChatCompleteTask = async (task: Task, apiKey: string) => {
   const data = task.def.data
   const serverUrl = getServerUrl(task.def.serverUrl)
-  const resp = await fetch(`${serverUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: 'Bearer ' + apiKey,
-    },
-    body: JSON.stringify(data),
-  })
-  if (!resp.ok) {
-    const errorMessage = await getErrorMessage(resp)
-    throw new Error(errorMessage ?? `Chat completion failed: ${resp.status}`)
+  const controller = new AbortController()
+  const totalTimer = setTimeout(() => controller.abort(), CHAT_TOTAL_TIMEOUT_MS)
+  let stallTimer: ReturnType<typeof setTimeout> | undefined
+  const resetStallTimer = () => {
+    if (stallTimer != null) clearTimeout(stallTimer)
+    stallTimer = setTimeout(() => controller.abort(), CHAT_STREAM_STALL_TIMEOUT_MS)
   }
 
-  const expectsStream = data?.stream === true
-  const contentType = resp.headers.get('content-type')?.toLowerCase() ?? ''
-  if (expectsStream && contentType.includes('text/event-stream')) {
-    const summarySessionKey = task.def.extra?.summarySessionKey as string | undefined
-    task.resp = await readChatCompletionStream({
-      resp,
-      onContent: async (content) => {
-        if (typeof summarySessionKey === 'string' && summarySessionKey.length > 0) {
-          await updateVideoSummaryStreaming({
-            sessionKey: summarySessionKey,
-            streamingContent: content,
-          })
-        }
+  try {
+    const resp = await fetch(`${serverUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + apiKey,
       },
+      body: JSON.stringify(data),
+      signal: controller.signal,
     })
-  } else {
-    task.resp = await resp.json()
-  }
+    if (!resp.ok) {
+      const errorMessage = await getErrorMessage(resp)
+      throw new Error(errorMessage ?? `Chat completion failed: ${resp.status}`)
+    }
 
-  const responsePayload = task.resp as {
-    usage?: { total_tokens?: number }
-    choices?: Array<{ message?: { content?: string } }>
-    error?: { code?: string, message?: string }
-  }
+    const expectsStream = data?.stream === true
+    const contentType = resp.headers.get('content-type')?.toLowerCase() ?? ''
+    if (expectsStream && contentType.includes('text/event-stream')) {
+      const summarySessionKey = task.def.extra?.summarySessionKey as string | undefined
+      resetStallTimer()
+      task.resp = await readChatCompletionStream({
+        resp,
+        onProgress: resetStallTimer,
+        onContent: async (content) => {
+          if (typeof summarySessionKey === 'string' && summarySessionKey.length > 0) {
+            await updateVideoSummaryStreaming({
+              sessionKey: summarySessionKey,
+              streamingContent: content,
+            })
+          }
+        },
+      })
+    } else {
+      task.resp = await resp.json()
+    }
 
-  const firstMessageContent = responsePayload.choices?.[0]?.message?.content?.trim()
-  if (typeof firstMessageContent === 'string' && firstMessageContent.length > 0) {
-    return true
-  }
+    const responsePayload = task.resp as {
+      usage?: { total_tokens?: number }
+      choices?: Array<{ message?: { content?: string } }>
+      error?: { code?: string, message?: string }
+    }
 
-  if (responsePayload.usage != null) {
-    return (responsePayload.usage.total_tokens ?? 0) > 0
-  }
+    const firstMessageContent = responsePayload.choices?.[0]?.message?.content?.trim()
+    if (typeof firstMessageContent === 'string' && firstMessageContent.length > 0) {
+      return true
+    }
 
-  const errorCode = responsePayload.error?.code ?? ''
-  const errorMessage = responsePayload.error?.message ?? ''
-  throw new Error(`${errorCode} ${errorMessage}`.trim())
+    if (responsePayload.usage != null) {
+      return (responsePayload.usage.total_tokens ?? 0) > 0
+    }
+
+    const errorCode = responsePayload.error?.code ?? ''
+    const errorMessage = responsePayload.error?.message ?? ''
+    throw new Error(`${errorCode} ${errorMessage}`.trim())
+  } catch (error: any) {
+    if (error?.name === 'AbortError') {
+      throw new Error('Chat completion request aborted: timeout or stalled stream')
+    }
+    throw error
+  } finally {
+    clearTimeout(totalTimer)
+    if (stallTimer != null) clearTimeout(stallTimer)
+  }
 }

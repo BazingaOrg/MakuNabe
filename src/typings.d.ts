@@ -7,7 +7,6 @@ interface MethodContext {
 
 interface EnvData {
   sidePanel?: boolean
-  manualInsert?: boolean // 是否手动插入字幕列表
   autoExpand?: boolean
   flagDot?: boolean
 
@@ -43,7 +42,6 @@ interface EnvData {
 interface TempData {
   downloadType?: string
   compact?: boolean // 是否紧凑视图
-  summaryEmailSentVideoKey?: string
 }
 
 interface TaskDef {

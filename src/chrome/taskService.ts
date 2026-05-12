@@ -5,11 +5,24 @@ import {ensureSummaryEmailSent} from './summaryEmailService'
 import {ensureLegacyApiSecretReady, getApiSecret} from './secretService'
 
 export const tasksMap = new Map<string, Task>()
+const inflightTaskIds = new Set<string>()
 const TASK_STORAGE_PREFIX = 'makunabe_task:'
 const TASK_HEARTBEAT_INTERVAL_MS = 10 * 1000
 
 const getTaskStorageKey = (taskId: string) => {
   return `${TASK_STORAGE_PREFIX}${taskId}`
+}
+
+const isValidStoredTask = (value: unknown): value is Task => {
+  if (value == null || typeof value !== 'object') return false
+  const record = value as Record<string, unknown>
+  if (typeof record.id !== 'string' || record.id.length === 0) return false
+  if (typeof record.status !== 'string') return false
+  if (typeof record.startTime !== 'number') return false
+  const def = record.def as Record<string, unknown> | undefined
+  if (def == null || typeof def !== 'object') return false
+  if (typeof def.type !== 'string' || def.type.length === 0) return false
+  return true
 }
 
 const toStoredTask = (task: Task): Task => {
@@ -45,7 +58,13 @@ const loadTask = async (taskId: string): Promise<Task | undefined> => {
   }
 
   try {
-    return JSON.parse(rawValue) as Task
+    const parsed: unknown = JSON.parse(rawValue)
+    if (!isValidStoredTask(parsed)) {
+      console.error('Stored task has invalid shape, removing', taskId)
+      await removeTask(taskId)
+      return undefined
+    }
+    return parsed
   } catch (error) {
     console.error('Failed to parse stored task', taskId, error)
     await removeTask(taskId)
@@ -63,7 +82,13 @@ const loadStoredTasks = async (): Promise<Task[]> => {
     }
 
     try {
-      tasks.push(JSON.parse(rawValue) as Task)
+      const parsed: unknown = JSON.parse(rawValue)
+      if (!isValidStoredTask(parsed)) {
+        console.error('Stored task has invalid shape, removing', storageKey)
+        await chrome.storage.local.remove(storageKey)
+        continue
+      }
+      tasks.push(parsed)
     } catch (error) {
       console.error('Failed to parse stored task', storageKey, error)
       await chrome.storage.local.remove(storageKey)
@@ -184,6 +209,19 @@ const rerunChatCompleteTask = async (task: Task, apiKey: string) => {
 }
 
 export const handleTask = async (task: Task) => {
+  if (inflightTaskIds.has(task.id)) {
+    console.debug(`任务已在执行中，跳过重入: ${task.id}`)
+    return
+  }
+  inflightTaskIds.add(task.id)
+  try {
+    await handleTaskInner(task)
+  } finally {
+    inflightTaskIds.delete(task.id)
+  }
+}
+
+const handleTaskInner = async (task: Task) => {
   console.debug(`处理任务: ${task.id} (type: ${task.def.type})`)
   let heartbeatTimer: ReturnType<typeof setInterval> | undefined
   try {
@@ -258,8 +296,15 @@ export const handleTask = async (task: Task) => {
   }
 }
 
+let initTaskServicePromise: Promise<void> | undefined
+
 export const initTaskService = () => {
-  loadStoredTasks().then(async (storedTasks) => {
+  if (initTaskServicePromise != null) {
+    return initTaskServicePromise
+  }
+
+  initTaskServicePromise = (async () => {
+    const storedTasks = await loadStoredTasks()
     const now = Date.now()
 
     for (const task of storedTasks) {
@@ -281,12 +326,15 @@ export const initTaskService = () => {
 
       tasksMap.set(task.id, task)
     }
-  }).catch(console.error)
+  })()
+
+  initTaskServicePromise.catch(console.error)
 
   // 处理任务: tasksMap
-  setInterval(() => {
+  setInterval(async () => {
+    await initTaskServicePromise
     for (const task of tasksMap.values()) {
-      if (task.status === 'pending') {
+      if (task.status === 'pending' && !inflightTaskIds.has(task.id)) {
         handleTask(task).catch(console.error)
         break
       } else if (task.status === 'running') {
@@ -295,7 +343,8 @@ export const initTaskService = () => {
     }
   }, 1000)
   // 检测清理tasksMap
-  setInterval(() => {
+  setInterval(async () => {
+    await initTaskServicePromise
     const now = Date.now()
 
     for (const [taskId, task] of tasksMap) {
@@ -306,4 +355,6 @@ export const initTaskService = () => {
       }
     }
   }, 10000)
+
+  return initTaskServicePromise
 }

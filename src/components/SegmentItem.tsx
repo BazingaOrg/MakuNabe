@@ -4,6 +4,7 @@ import useSubtitle from '../hooks/useSubtitle'
 import {setCheckAutoScroll, setCurOffsetTop, setNeedScroll} from '../redux/envReducer'
 import NormalSegmentItem from './NormalSegmentItem'
 import CompactSegmentItem from './CompactSegmentItem'
+import toast from 'react-hot-toast'
 
 const SegmentItem = (props: {
   bodyRef: any
@@ -22,7 +23,9 @@ const SegmentItem = (props: {
 
   const moveCallback = useCallback((event: any) => {
     if (event.altKey === true) { // 复制
-      navigator.clipboard.writeText(item.content).catch(console.error)
+      navigator.clipboard.writeText(item.content).then(() => {
+        toast.success('已复制')
+      }).catch(console.error)
     } else {
       move(item.from, false)
     }
@@ -30,7 +33,9 @@ const SegmentItem = (props: {
 
   const move2Callback = useCallback((event: any) => {
     if (event.altKey === true) { // 复制
-      navigator.clipboard.writeText(item.content).catch(console.error)
+      navigator.clipboard.writeText(item.content).then(() => {
+        toast.success('已复制')
+      }).catch(console.error)
     } else {
       move(item.from, true)
     }
@@ -74,4 +79,4 @@ const SegmentItem = (props: {
   </span>
 }
 
-export default SegmentItem
+export default React.memo(SegmentItem)

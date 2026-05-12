@@ -247,7 +247,7 @@ const Body = () => {
 
     {/* body */}
     <div ref={bodyRef} onWheel={onWheel}
-      className={classNames('flex flex-col gap-1.5 overflow-y-auto select-text scroll-smooth px-1.5 pb-1.5', showFloatingSummary && 'pb-[100px]')}
+      className={classNames('flex flex-col gap-1 overflow-y-auto select-text scroll-smooth px-1.5 pb-1.5', showFloatingSummary && 'pb-[100px]')}
       style={{
         height: `${totalHeight - HEADER_HEIGHT - TITLE_HEIGHT}px`
       }}

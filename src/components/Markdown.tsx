@@ -23,7 +23,7 @@ function Markdown(props: {
   const {content, codeBlockClass} = props
 
   return <ReactMarkdown
-    className='markdown prose prose-sm dark:prose-invert prose-h1:text-center prose-h1:font-bold prose-h1:underline-offset-4 overflow-y-auto scrollbar-hide'
+    className='markdown prose prose-sm dark:prose-invert prose-h1:text-center prose-h1:font-bold prose-h1:underline-offset-4 max-w-full break-words overflow-y-auto scrollbar-hide'
     linkTarget={'_blank'}
     components={{
       code({node, inline, className, children, ...props}) {

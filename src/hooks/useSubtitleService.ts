@@ -1,5 +1,5 @@
 import {useAppDispatch, useAppSelector} from './redux'
-import {useContext, useEffect} from 'react'
+import {useEffect} from 'react'
 import {
   setCurFetched,
   setCurIdx,
@@ -11,14 +11,14 @@ import {
   setSegments,
   setTotalHeight,
 } from '../redux/envReducer'
-import {EventBusContext} from '../Router'
-import {EVENT_EXPAND, TOTAL_HEIGHT_MAX, TOTAL_HEIGHT_MIN, WORDS_MIN, WORDS_RATE} from '../consts/const'
+import {TOTAL_HEIGHT_MAX, TOTAL_HEIGHT_MIN, WORDS_MIN, WORDS_RATE} from '../consts/const'
 import {useAsyncEffect, useInterval} from 'ahooks'
 import {getModelMaxTokens, getWholeText} from '../utils/bizUtil'
 import { useMessage } from './useMessageService'
 import { setCurrentTime } from '../redux/currentTimeReducer'
 import { RootState } from '../store'
 import {logMessagingError} from '@/utils/messageError'
+import useExpand from './useExpand'
 
 /**
  * Service是单例，类似后端的服务概念
@@ -35,7 +35,7 @@ const useSubtitleService = () => {
   const chapters = useAppSelector((state: RootState) => state.env.chapters)
   const currentTime = useAppSelector((state: RootState) => state.currentTime.currentTime)
   const curIdx = useAppSelector((state: RootState) => state.env.curIdx)
-  const eventBus = useContext(EventBusContext)
+  const expand = useExpand()
   const needScroll = useAppSelector(state => state.env.needScroll)
   const segments = useAppSelector(state => state.env.segments)
   const {sendInject} = useMessage(Boolean(envData.sidePanel))
@@ -43,11 +43,9 @@ const useSubtitleService = () => {
   // 有数据时自动展开
   useEffect(() => {
     if ((data != null) && data.body.length > 0) {
-      eventBus.emit({
-        type: EVENT_EXPAND
-      })
+      expand()
     }
-  }, [data, eventBus, infos])
+  }, [data, expand, infos])
 
   // 当前未展示 & (未折叠 | 自动展开) & 有列表 => 展示第一个
   useEffect(() => {

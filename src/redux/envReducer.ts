@@ -15,7 +15,6 @@ interface EnvState {
   autoScroll?: boolean
   checkAutoScroll?: boolean
   curOffsetTop?: number
-  floatKeyPointsSegIdx?: number // segment的startIdx
 
   noVideo?: boolean
   totalHeight: number
@@ -86,9 +85,6 @@ export const slice = createSlice({
     },
     setTempReady: (state) => {
       state.tempReady = true
-    },
-    setFloatKeyPointsSegIdx: (state, action: PayloadAction<number | undefined>) => {
-      state.floatKeyPointsSegIdx = action.payload
     },
     setFoldAll: (state, action: PayloadAction<boolean>) => {
       state.foldAll = action.payload
@@ -202,7 +198,6 @@ export const {
   setTotalHeight,
   setCheckAutoScroll,
   setCurOffsetTop,
-  setFloatKeyPointsSegIdx,
   setFoldAll,
   setSegmentFold,
   syncSummarySessionState,

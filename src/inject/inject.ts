@@ -16,12 +16,10 @@ const debug = (...args: any[]) => {
   // 读取envData
   const envDataStr = (await chrome.storage.sync.get(STORAGE_ENV))[STORAGE_ENV]
   let sidePanel: boolean | null = null
-  let manualInsert: boolean | null = null
   if (typeof envDataStr === 'string' && envDataStr.length > 0) {
     try {
       const envData = JSON.parse(envDataStr)
       sidePanel = envData.sidePanel
-      manualInsert = envData.manualInsert
     } catch (error) {
       console.error('Error parsing envData:', error)
     }
@@ -88,6 +86,7 @@ const debug = (...args: any[]) => {
       iframe.style.background = 'transparent'
       iframe.style.clipPath = 'inset(0 round 6px)'
       iframe.style.setProperty('-webkit-mask-image', '-webkit-radial-gradient(white, black)')
+      iframe.style.transition = 'height 180ms ease-out'
       iframe.allow = 'clipboard-read; clipboard-write;'
 
       if (vKey.length > 0) {
@@ -108,7 +107,7 @@ const debug = (...args: any[]) => {
     }
   }
 
-  if (sidePanel !== true && manualInsert !== true) {
+  if (sidePanel !== true) {
     const timerIframe = setInterval(function () {
       const danmukuBox = document.getElementById('danmukuBox')
       if (danmukuBox != null) {
@@ -229,7 +228,7 @@ const debug = (...args: any[]) => {
         // pagesMap
         pagesMap = {}
         pages.forEach(page => {
-          pagesMap[page.page + ''] = page
+          pagesMap[String(page.page)] = page
         })
 
         debug('refreshVideoInfo: ', aid, cid, pages, subtitles)
@@ -261,7 +260,11 @@ const debug = (...args: any[]) => {
 
     const urlSearchParams = new URLSearchParams(window.location.search)
     const p = urlSearchParams.get('p') ?? '1'
-    const page = pagesMap[p]
+    let page = pagesMap[p]
+    if (page == null) {
+      console.warn('pagesMap miss, falling back to first page', p, Object.keys(pagesMap))
+      page = pages[0]
+    }
     if (page == null) return
     const cid: number | null = page.cid
 
@@ -379,7 +382,8 @@ const debug = (...args: any[]) => {
   // 初始化injectMessage
   runtime.injectMessaging.init(methods)
 
-  setInterval(() => {
+  let pollTimer: ReturnType<typeof setInterval> | undefined
+  const tick = () => {
     if (sidePanel !== true) {
       const iframe = document.getElementById(IFRAME_ID) as HTMLIFrameElement | undefined
       if (iframe == null || iframe.style.display === 'none') return
@@ -387,5 +391,24 @@ const debug = (...args: any[]) => {
 
     refreshVideoInfo().catch(console.error)
     refreshSubtitles()
-  }, 1000)
+  }
+  const startPollTimer = () => {
+    if (pollTimer != null) return
+    pollTimer = setInterval(tick, 1000)
+  }
+  const stopPollTimer = () => {
+    if (pollTimer == null) return
+    clearInterval(pollTimer)
+    pollTimer = undefined
+  }
+  startPollTimer()
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      stopPollTimer()
+    } else {
+      startPollTimer()
+    }
+  })
+  window.addEventListener('pagehide', stopPollTimer)
 })()

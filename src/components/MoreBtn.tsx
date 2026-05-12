@@ -1,4 +1,4 @@
-import {MouseEvent, useCallback, useContext, useRef, useState} from 'react'
+import {MouseEvent, useCallback, useRef, useState} from 'react'
 import {useClickAway} from 'ahooks'
 import {
   FiMoreVertical,
@@ -10,14 +10,13 @@ import Popover from '../components/Popover'
 import {Placement} from '@popperjs/core/lib/enums'
 import {useAppDispatch, useAppSelector} from '../hooks/redux'
 import {setEnvData, setTempData} from '../redux/envReducer'
-import {EventBusContext} from '../Router'
-import {EVENT_EXPAND} from '../consts/const'
 import {formatSrtTime, formatTime, formatVttTime, downloadText} from '../utils/util'
 import toast from 'react-hot-toast'
 import {getSummarize} from '../utils/bizUtil'
 import dayjs from 'dayjs'
 import { useMessage } from '@/hooks/useMessageService'
 import {logMessagingError} from '@/utils/messageError'
+import useExpand from '@/hooks/useExpand'
 
 interface Props {
   placement: Placement
@@ -67,7 +66,7 @@ const MoreBtn = (props: Props) => {
   const envData = useAppSelector(state => state.env.envData)
   const downloadType = useAppSelector(state => state.env.tempData.downloadType)
   const [moreVisible, setMoreVisible] = useState(false)
-  const eventBus = useContext(EventBusContext)
+  const expand = useExpand()
   const videoSummary = useAppSelector(state => state.env.videoSummary)
   const url = useAppSelector(state => state.env.url)
   const title = useAppSelector(state => state.env.title)
@@ -195,11 +194,9 @@ const MoreBtn = (props: Props) => {
     setMoreVisible(!moreVisible)
     // 显示菜单时自动展开，防止菜单显示不全
     if (!moreVisible) {
-      eventBus.emit({
-        type: EVENT_EXPAND
-      })
+      expand()
     }
-  }, [dispatch, envData, eventBus, moreVisible])
+  }, [dispatch, envData, expand, moreVisible])
   useClickAway(() => {
     setMoreVisible(false)
   }, moreRef)
@@ -212,7 +209,7 @@ const MoreBtn = (props: Props) => {
     </button>
   </div>
   {moreVisible &&
-    <Popover refElement={moreRef.current} className='bili-popover text-base-content z-[1000] min-w-[220px]' options={{
+    <Popover refElement={moreRef.current} className='bili-popover text-base-content z-[1000] min-w-[220px]' onClose={() => setMoreVisible(false)} options={{
       placement
     }}>
       <div className='flex flex-col gap-1'>

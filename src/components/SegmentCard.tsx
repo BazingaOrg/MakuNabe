@@ -48,7 +48,7 @@ const SegmentCard = (props: {
     {segment.fold !== true
       ? <div>
         {compact !== true && <div className='desc text-xs flex py-1'>
-          <div className='w-[66px] flex justify-center'>时间</div>
+          <div className='w-14 flex justify-center'>时间</div>
           <div className='flex-1'>字幕内容</div>
         </div>}
         {segment.items.map((item: TranscriptItem, idx: number) => <SegmentItem key={item.idx}

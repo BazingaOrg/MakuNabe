@@ -4,7 +4,6 @@ const hasOwn = (obj: object, key: string) => Object.prototype.hasOwnProperty.cal
 
 const ENV_DATA_KEYS: Array<keyof EnvData> = [
   'sidePanel',
-  'manualInsert',
   'autoExpand',
   'flagDot',
   'apiKeyConfigured',
@@ -64,6 +63,5 @@ export const sanitizeTempData = (data?: TempData): TempData | undefined => {
   return {
     downloadType: data.downloadType,
     compact: data.compact,
-    summaryEmailSentVideoKey: data.summaryEmailSentVideoKey,
   }
 }
